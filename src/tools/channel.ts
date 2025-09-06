@@ -231,20 +231,40 @@ export async function readMessagesHandler(
       };
     }
 
-    // Format messages 
-    const formattedMessages = messages.map(msg => ({
-      id: msg.id,
-      content: msg.content,
-      author: {
-        id: msg.author.id,
-        username: msg.author.username,
-        bot: msg.author.bot
-      },
-      timestamp: msg.createdAt,
-      attachments: msg.attachments.size,
-      embeds: msg.embeds.length,
-      replyTo: msg.reference ? msg.reference.messageId : null
-    })).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    // Format messages (include structured embed summaries, not only counts)
+    const formattedMessages = messages.map(msg => {
+      const embedSummaries = msg.embeds.map(e => {
+        const embed: any = e as any;
+        return {
+          title: embed.title ?? null,
+          type: embed.type ?? null,
+          description: embed.description ?? null,
+          url: embed.url ?? null,
+          fields: embed.fields?.map((f: any) => ({ name: f.name, value: f.value, inline: f.inline })) ?? [],
+          timestamp: embed.timestamp ?? null,
+          footer: embed.footer ? { text: (embed.footer as any).text ?? null, iconURL: (embed.footer as any).iconURL ?? null } : null,
+          image: embed.image ? { url: (embed.image as any).url ?? null } : null,
+          thumbnail: embed.thumbnail ? { url: (embed.thumbnail as any).url ?? null } : null,
+          author: embed.author ? { name: (embed.author as any).name ?? null, url: (embed.author as any).url ?? null } : null,
+          // include raw representation as a fallback
+          raw: typeof embed.toJSON === 'function' ? embed.toJSON() : embed
+        };
+      });
+
+      return {
+        id: msg.id,
+        content: msg.content,
+        author: {
+          id: msg.author.id,
+          username: msg.author.username,
+          bot: msg.author.bot
+        },
+        timestamp: msg.createdAt,
+        attachments: msg.attachments.size,
+        embeds: embedSummaries,
+        replyTo: msg.reference ? msg.reference.messageId : null
+      };
+    }).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
     return {
       content: [{ 
