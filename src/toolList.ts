@@ -326,5 +326,60 @@ export const toolList = [
       },
       required: ["guildId"]
     }
+  },
+  {
+    name: "discord_set_presence",
+    description: "Sets the bot's presence (status and activity) in Discord",
+    inputSchema: {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: ["online", "idle", "dnd", "invisible"], description: "The presence status to set." },
+        afk: { type: "boolean", description: "Whether the bot is AFK." },
+        activities: {
+          type: "object",
+          properties: {
+            type: { type: "string", enum: ["PLAYING", "STREAMING", "LISTENING", "WATCHING", "COMPETING", "CUSTOM"], description: "The type of activity (e.g. 'Listening to...', 'Playing...')." },
+            name: { type: "string", description: "The name of the activity." },
+            url: { type: "string", description: "The URL for the activity (only for STREAMING type)." }
+          }
+        }
+      },
+      required: ["status"]
+    }
+  },
+  {
+    name: "discord_set_nickname",
+    description: "Sets the bot's nickname in a specified Discord server (guild).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string", description: "The ID of the server where to set the nickname." },
+        nick: { type: "string", description: "The nickname to set for the bot. Use null or empty string to clear the nickname." }
+      },
+      required: ["guildId"]
+    }
+  },
+  {
+    name: "discord_set_about_me",
+    description: "Sets the global 'About Me' section content for the bot's Discord profile.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        aboutMe: { type: "string", description: "The global 'About Me' section content." }
+      },
+      required: ["aboutMe"]
+    }
+  },
+  {
+    name: "discord_set_bio",
+    description: "Sets the 'Bio' section content for the bot in a specified Discord server (guild).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string", description: "The ID of the server where to set the bio." },
+        bio: { type: "string", description: "The 'Bio' section content to set for the bot in the specified server." }
+      },
+      required: ["guildId"]
+    }
   }
-]; 
+];

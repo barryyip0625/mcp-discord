@@ -135,19 +135,65 @@ export const DeleteWebhookSchema = z.object({
 export const ListServersSchema = z.object({});
 
 export const SearchMessagesSchema = z.object({
-  guildId: z.string().min(1, "guildId is required"),
-  // Optional filters
-  content: z.string().optional(),
-  authorId: z.string().optional(),
-  mentions: z.string().optional(),
-  has: z.enum(['link','embed','file','poll','image','video','sound','sticker','snapshot']).optional(),
-  maxId: z.string().optional(),
-  minId: z.string().optional(),
-  channelId: z.string().optional(),
-  pinned: z.boolean().optional(),
-  authorType: z.enum(['user','bot','webhook']).optional(),
-  sortBy: z.enum(['timestamp','relevance']).optional(),
-  sortOrder: z.enum(['desc','asc']).optional(),
-  limit: z.number().min(1).max(100).default(25).optional(),
-  offset: z.number().min(0).default(0).optional()
+    guildId: z.string().min(1, "guildId is required"),
+    // Optional filters
+    content: z.string().optional(),
+    authorId: z.string().optional(),
+    mentions: z.string().optional(),
+    has: z.enum(['link', 'embed', 'file', 'poll', 'image', 'video', 'sound', 'sticker', 'snapshot']).optional(),
+    maxId: z.string().optional(),
+    minId: z.string().optional(),
+    channelId: z.string().optional(),
+    pinned: z.boolean().optional(),
+    authorType: z.enum(['user', 'bot', 'webhook']).optional(),
+    sortBy: z.enum(['timestamp', 'relevance']).optional(),
+    sortOrder: z.enum(['desc', 'asc']).optional(),
+    limit: z.number().min(1).max(100).default(25).optional(),
+    offset: z.number().min(0).default(0).optional()
 });
+
+// Bot presence/status schemas
+export const SetPresenceSchema = z.object({
+    status: z.enum(["online", "idle", "dnd", "invisible"], { description: "The presence status to set." }),
+    afk: z.boolean({
+        description: "Whether I am AFK.",
+    }).optional(),
+    activities: z.object({
+        type: z.enum(
+            ["PLAYING", "STREAMING", "LISTENING", "WATCHING", "COMPETING", "CUSTOM"],
+            { description: "The type of activity." }),
+        name: z.string(
+            { description: "The name of the activity." }
+        ),
+        url: z.string(
+            { description: "The URL for the activity (only for STREAMING type)." }
+        ).optional()
+    }).optional()
+});
+
+export const SetNicknameSchema = z.object({
+    guildId: z.string({
+        description: "The ID of the server where to set the nickname."
+    }).min(1, "guildId is required"),
+    nick: z.string({
+        description: "The nickname to set (leave empty to reset)."
+    }).optional()
+});
+
+export const SetAboutMeSchema = z.object({
+    aboutMe: z.string({
+        description: "The global 'About Me' section content."
+    })
+});
+
+export const SetBioSchema = z.object({
+    guildId: z.string({
+        description: "The ID of the server where to set the bio."
+    }).min(1, "guildId is required"),
+    bio: z.string({
+        description: "The 'Bio' section content to set for the bot in the specified server."
+    }).optional()
+}, {
+    description: "Schema for setting the 'Bio' section in a specific server."
+});
+

@@ -4,31 +4,34 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import express, { Request, Response } from "express";
 import { toolList } from './toolList.js';
 import {
-  createToolContext,
-  loginHandler,
-  sendMessageHandler,
-  getForumChannelsHandler,
-  createForumPostHandler,
-  getForumPostHandler,
-  replyToForumHandler,
-  deleteForumPostHandler,
-  createTextChannelHandler,
-  deleteChannelHandler,
-  readMessagesHandler,
-  getServerInfoHandler,
-  addReactionHandler,
-  addMultipleReactionsHandler,
-  removeReactionHandler,
-  deleteMessageHandler,
-  createWebhookHandler,
-  sendWebhookMessageHandler,
-  editWebhookHandler,
-  deleteWebhookHandler,
-  editCategoryHandler,
-  createCategoryHandler,
-  deleteCategoryHandler,
-  listServersHandler,
-  searchMessagesHandler   
+    createToolContext,
+    loginHandler,
+    sendMessageHandler,
+    getForumChannelsHandler,
+    createForumPostHandler,
+    getForumPostHandler,
+    replyToForumHandler,
+    deleteForumPostHandler,
+    createTextChannelHandler,
+    deleteChannelHandler,
+    readMessagesHandler,
+    getServerInfoHandler,
+    addReactionHandler,
+    addMultipleReactionsHandler,
+    removeReactionHandler,
+    deleteMessageHandler,
+    createWebhookHandler,
+    sendWebhookMessageHandler,
+    editWebhookHandler,
+    deleteWebhookHandler,
+    editCategoryHandler,
+    createCategoryHandler,
+    deleteCategoryHandler,
+    listServersHandler,
+    searchMessagesHandler,
+    setPresenceHandler,
+    setBioHandler,
+    setNicknameHandler
 } from './tools/tools.js';
 import { Client, GatewayIntentBits } from "discord.js";
 import { info, error } from './logger.js';
@@ -106,9 +109,9 @@ export class StreamableHttpTransport implements MCPTransport {
                     id: req.body?.id || null,
                 });
             }
-            
+
             info(`Request body (session ${this.sessionId}): ${JSON.stringify(req.body)}`);
-            
+
             // Handle all tool requests in a generic way
             if (!req.body.method) {
                 return res.status(400).json({
@@ -120,12 +123,12 @@ export class StreamableHttpTransport implements MCPTransport {
                     id: req.body?.id || null,
                 });
             }
-            
+
             // Handle all tools directly with proper error handling
             try {
                 const method = req.body.method;
                 const params = req.body.params || {};
-                
+
                 // Make sure toolContext is available for tool methods
                 if (!this.toolContext && method !== 'list_tools' && method !== 'initialize') {
                     return res.status(400).json({
@@ -137,9 +140,9 @@ export class StreamableHttpTransport implements MCPTransport {
                         id: req.body?.id || null,
                     });
                 }
-                
+
                 let result;
-                
+
                 // Handle each tool method directly
                 switch (method) {
                     case 'initialize':
@@ -158,7 +161,7 @@ export class StreamableHttpTransport implements MCPTransport {
                             }
                         };
                         break;
-                    
+
                     case 'notifications/initialized':
                         // Client indicates it's ready to begin normal operation
                         info("Client initialized. Starting normal operations.");
@@ -168,17 +171,17 @@ export class StreamableHttpTransport implements MCPTransport {
                             result: null,
                             id: req.body.id
                         });
-                        
+
                     case 'tools/list':
                         // New MCP method name format
                         result = { tools: toolList };
                         break;
-                        
+
                     case 'list_tools':
                         // Legacy method name for backward compatibility
                         result = { tools: toolList };
                         break;
-                        
+
                     case 'discord_login':
                         result = await loginHandler(params, this.toolContext!);
                         // Log client state after login
@@ -191,7 +194,7 @@ export class StreamableHttpTransport implements MCPTransport {
                             } : null
                         })}`);
                         break;
-                        
+
                     // Make sure Discord client is logged in for other Discord API tools 
                     // but return a proper JSON-RPC error rather than throwing an exception
                     case 'discord_send':
@@ -217,6 +220,9 @@ export class StreamableHttpTransport implements MCPTransport {
                     case 'discord_delete_category':
                     case 'discord_list_servers':
                     case 'discord_search_messages':
+                    case 'discord_set_presence':
+                    case 'discord_set_bio':
+                    case 'discord_set_nickname':
                         // Check if client is logged in
                         if (!this.toolContext!.client.isReady()) {
                             error(`Client not ready for method ${method}, client state: ${JSON.stringify({
@@ -227,7 +233,7 @@ export class StreamableHttpTransport implements MCPTransport {
                                     tag: this.toolContext!.client.user.tag,
                                 } : null
                             })}`);
-                            
+
                             // Check if we have a token but not ready - try to force reconnect
                             if (this.toolContext!.client.token) {
                                 info("Has token but not ready - attempting to force reconnect");
@@ -235,7 +241,7 @@ export class StreamableHttpTransport implements MCPTransport {
                                     // Attempt to force login with existing token
                                     await this.toolContext!.client.login(this.toolContext!.client.token);
                                     info(`Force reconnect successful: ${this.toolContext!.client.isReady()}`);
-                                    
+
                                     // If still not ready after reconnect, return error
                                     if (!this.toolContext!.client.isReady()) {
                                         return res.json({
@@ -247,7 +253,7 @@ export class StreamableHttpTransport implements MCPTransport {
                                             id: req.body?.id || null,
                                         });
                                     }
-                                    
+
                                     // Continue with original request as now logged in
                                     info("Reconnected successfully, continuing with original request");
                                 } catch (reconnectError) {
@@ -272,7 +278,7 @@ export class StreamableHttpTransport implements MCPTransport {
                                 });
                             }
                         }
-                        
+
                         // Call appropriate handler based on method
                         switch (method) {
                             case 'discord_send':
@@ -342,20 +348,29 @@ export class StreamableHttpTransport implements MCPTransport {
                                 result = await listServersHandler(params, this.toolContext!);
                             case 'discord_search_messages':
                                 result = await searchMessagesHandler(params, this.toolContext!);
-                                break;break;
+                                break; break;
+                            case 'discord_set_presence':
+                                result = await setPresenceHandler(params, this.toolContext!);
+                                break;
+                            case 'discord_set_bio':
+                                result = await setBioHandler(params, this.toolContext!);
+                                break;
+                            case 'discord_set_nickname':
+                                result = await setNicknameHandler(params, this.toolContext!);
+                                break;
                         }
                         break;
-                        
-                
-                        
+
+
+
                     case 'tools/call':
                         // Handle new tools/call method format
                         const toolName = params.name;
                         const toolArgs = params.arguments || {};
-                        
+
                         // Check if Discord client is logged in for Discord API tools
-                        if (toolName !== 'discord_login' && 
-                            toolName.startsWith('discord_') && 
+                        if (toolName !== 'discord_login' &&
+                            toolName.startsWith('discord_') &&
                             !this.toolContext!.client.isReady()) {
                             error(`Client not ready for tool ${toolName}, client state: ${JSON.stringify({
                                 isReady: this.toolContext!.client.isReady(),
@@ -365,7 +380,7 @@ export class StreamableHttpTransport implements MCPTransport {
                                     tag: this.toolContext!.client.user.tag,
                                 } : null
                             })}`);
-                            
+
                             // Check if we have a token but not ready - try to force reconnect
                             if (this.toolContext!.client.token) {
                                 info("Has token but not ready - attempting to force reconnect");
@@ -373,7 +388,7 @@ export class StreamableHttpTransport implements MCPTransport {
                                     // Attempt to force login with existing token
                                     await this.toolContext!.client.login(this.toolContext!.client.token);
                                     info(`Force reconnect successful: ${this.toolContext!.client.isReady()}`);
-                                    
+
                                     // If still not ready after reconnect, return error
                                     if (!this.toolContext!.client.isReady()) {
                                         return res.json({
@@ -385,7 +400,7 @@ export class StreamableHttpTransport implements MCPTransport {
                                             id: req.body?.id || null,
                                         });
                                     }
-                                    
+
                                     // Continue with original request as now logged in
                                     info("Reconnected successfully, continuing with original request");
                                 } catch (reconnectError) {
@@ -410,7 +425,7 @@ export class StreamableHttpTransport implements MCPTransport {
                                 });
                             }
                         }
-                        
+
                         // Call the appropriate handler based on tool name
                         switch (toolName) {
                             case 'discord_login':
@@ -425,75 +440,75 @@ export class StreamableHttpTransport implements MCPTransport {
                                     } : null
                                 })}`);
                                 break;
-                                
+
                             case 'discord_send':
                                 result = await sendMessageHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_get_forum_channels':
                                 result = await getForumChannelsHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_create_forum_post':
                                 result = await createForumPostHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_get_forum_post':
                                 result = await getForumPostHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_reply_to_forum':
                                 result = await replyToForumHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_delete_forum_post':
                                 result = await deleteForumPostHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_create_text_channel':
                                 result = await createTextChannelHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_delete_channel':
                                 result = await deleteChannelHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_read_messages':
                                 result = await readMessagesHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_get_server_info':
                                 result = await getServerInfoHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_add_reaction':
                                 result = await addReactionHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_add_multiple_reactions':
                                 result = await addMultipleReactionsHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_remove_reaction':
                                 result = await removeReactionHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_delete_message':
                                 result = await deleteMessageHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_create_webhook':
                                 result = await createWebhookHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_send_webhook_message':
                                 result = await sendWebhookMessageHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_edit_webhook':
                                 result = await editWebhookHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+
                             case 'discord_delete_webhook':
                                 result = await deleteWebhookHandler(toolArgs, this.toolContext!);
                                 break;
@@ -506,14 +521,22 @@ export class StreamableHttpTransport implements MCPTransport {
                             case 'discord_delete_category':
                                 result = await deleteCategoryHandler(toolArgs, this.toolContext!);
                                 break;
-                            
+
                             case 'discord_list_servers':
                                 result = await listServersHandler(toolArgs, this.toolContext!);
                                 break;
                             case 'discord_search_messages':
                                 result = await searchMessagesHandler(toolArgs, this.toolContext!);
                                 break;
-                                
+                            case 'discord_set_presence':
+                                result = await setPresenceHandler(toolArgs, this.toolContext!);
+                                break;
+                            case 'discord_set_bio':
+                                result = await setBioHandler(params, this.toolContext!);
+                                break;
+                            case 'discord_set_nickname':
+                                result = await setNicknameHandler(params, this.toolContext!);
+                                break;
                             default:
                                 return res.status(400).json({
                                     jsonrpc: '2.0',
@@ -525,7 +548,7 @@ export class StreamableHttpTransport implements MCPTransport {
                                 });
                         }
                         break;
-                        
+
                     default:
                         // For method 'ping' and other non-critical methods, just return an empty result
                         // This ensures MCP compatibility for health checks and probes
@@ -544,9 +567,9 @@ export class StreamableHttpTransport implements MCPTransport {
                             });
                         }
                 }
-                
+
                 info(`Request for ${method} handled successfully`);
-                
+
                 // Handle the case where tool handlers return { content, isError }
                 if (result && typeof result === 'object' && 'content' in result) {
                     // If it's an error from the tool handler
@@ -557,13 +580,13 @@ export class StreamableHttpTransport implements MCPTransport {
                             id: req.body.id,
                             error: {
                                 code: -32603,
-                                message: Array.isArray(result.content) 
-                                    ? result.content.map((item: any) => item.text).join(' ') 
+                                message: Array.isArray(result.content)
+                                    ? result.content.map((item: any) => item.text).join(' ')
                                     : 'Tool execution error'
                             }
                         });
                     }
-                    
+
                     // Return success result but maintain same format as other RPC methods
                     const finalResponse = {
                         jsonrpc: '2.0',
@@ -573,7 +596,7 @@ export class StreamableHttpTransport implements MCPTransport {
                     info(`Sending response (session ${this.sessionId}): ${JSON.stringify(finalResponse)}`);
                     return res.json(finalResponse);
                 }
-                
+
                 // Standard result format
                 const finalResponse = {
                     jsonrpc: '2.0',
@@ -582,7 +605,7 @@ export class StreamableHttpTransport implements MCPTransport {
                 };
                 info(`Sending response (session ${this.sessionId}): ${JSON.stringify(finalResponse)}`);
                 return res.json(finalResponse);
-                
+
             } catch (err) {
                 error('Error processing tool request: ' + String(err));
                 // Handle validation errors
@@ -606,7 +629,7 @@ export class StreamableHttpTransport implements MCPTransport {
                     id: req.body?.id || null,
                 });
             }
-            
+
         } catch (err) {
             error('Error handling MCP request: ' + String(err));
             if (!res.headersSent) {
@@ -625,18 +648,18 @@ export class StreamableHttpTransport implements MCPTransport {
     async start(server: Server): Promise<void> {
         this.server = server;
         info('Starting HTTP transport with server: ' + String(!!this.server));
-        
+
         // Try to get client from the DiscordMCPServer instance
         // First, check if the server is passed from DiscordMCPServer
         if (server) {
             // Try to access client directly from server._context
             const anyServer = server as any;
             let client: Client | undefined;
-            
+
             if (anyServer._context?.client) {
                 client = anyServer._context.client;
                 info('Found client in server._context');
-            } 
+            }
             // Also check if the server object has client directly
             else if (anyServer.client instanceof Client) {
                 client = anyServer.client;
@@ -647,7 +670,7 @@ export class StreamableHttpTransport implements MCPTransport {
                 client = anyServer._parent.client;
                 info('Found client in server._parent');
             }
-            
+
             if (client) {
                 this.toolContext = createToolContext(client);
                 info('Tool context initialized with Discord client');
@@ -666,12 +689,12 @@ export class StreamableHttpTransport implements MCPTransport {
                 info('Tool context initialized with new Discord client');
             }
         }
-        
+
         // Create a stateless transport
         this.transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: undefined // set to undefined for stateless servers
         });
-        
+
         // Connect the transport
         await this.server.connect(this.transport);
         info('Transport connected');

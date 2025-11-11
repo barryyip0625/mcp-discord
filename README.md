@@ -22,6 +22,7 @@ MCP-Discord provides the following Discord-related functionalities:
 - Create/delete text channels
 - Add/remove message reactions
 - Create/edit/delete/use webhooks
+- Update bot status and presence/activity
 
 ## Table of Contents
 
@@ -34,6 +35,7 @@ MCP-Discord provides the following Discord-related functionalities:
   - [Forum Functions](#forum-functions)
   - [Messages and Reactions](#messages-and-reactions)
   - [Webhook Management](#webhook-management)
+  - [Bot Status and Presence](#bot-status-and-presence)
 - [Development](#development)
 - [License](#license)
 
@@ -317,6 +319,12 @@ You can use Docker containers with both Claude and Cursor:
 - `discord_send_webhook_message`: Sends a message to a Discord channel using a webhook
 - `discord_edit_webhook`: Edits an existing webhook for a Discord channel
 - `discord_delete_webhook`: Deletes an existing webhook for a Discord channel
+
+### Bot Status and Presence
+
+- `discord_set_bio`: Set or clear the bot's 'Bio' section in a specified server
+- `discord_set_nickname`: Set or clear the bot's nickname in a specified server
+- `discord_set_presence`: Sets the bot's presence (status) and activity status on Discord
 
 ## Development
 

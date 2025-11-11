@@ -1,12 +1,11 @@
 import { Client } from "discord.js";
-import { z } from "zod";
 import { ToolResponse, ToolContext, ToolHandler } from "./types.js";
 import { loginHandler } from './login.js';
 import { sendMessageHandler } from './send-message.js';
-import { 
-  getForumChannelsHandler, 
-  createForumPostHandler, 
-  getForumPostHandler, 
+import {
+  getForumChannelsHandler,
+  createForumPostHandler,
+  getForumPostHandler,
   replyToForumHandler,
   deleteForumPostHandler
 } from './forum.js';
@@ -18,8 +17,8 @@ import {
   editCategoryHandler,
   deleteCategoryHandler
 } from './channel.js';
-import { 
-  getServerInfoHandler, 
+import {
+  getServerInfoHandler,
   listServersHandler,
   searchMessagesHandler
 } from "./server.js";
@@ -35,6 +34,12 @@ import {
   editWebhookHandler,
   deleteWebhookHandler
 } from './webhooks.js';
+import {
+  setPresenceHandler,
+  setNicknameHandler,
+  setAboutMeHandler,
+  setBioHandler
+} from './presence.js';
 
 // Export tool handlers
 export {
@@ -61,7 +66,11 @@ export {
   editCategoryHandler,
   deleteCategoryHandler,
   listServersHandler,
-  searchMessagesHandler
+  searchMessagesHandler,
+  setPresenceHandler,
+  setNicknameHandler,
+  setAboutMeHandler,
+  setBioHandler
 };
 
 // Export common types
