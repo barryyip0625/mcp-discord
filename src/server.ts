@@ -31,6 +31,17 @@ import {
   createCategoryHandler,
   editCategoryHandler,
   deleteCategoryHandler,
+  createVoiceChannelHandler,
+  setChannelPermissionsHandler,
+  removeChannelPermissionsHandler,
+  listRolesHandler,
+  createRoleHandler,
+  editRoleHandler,
+  deleteRoleHandler,
+  assignRoleHandler,
+  removeRoleHandler,
+  listMembersHandler,
+  getMemberHandler,
   listServersHandler,
   searchMessagesHandler
 } from './tools/tools.js';
@@ -194,6 +205,50 @@ export class DiscordMCPServer {
           case "discord_search_messages":
             this.logClientState("before discord_search_messages handler");
             toolResponse = await searchMessagesHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_list_roles":
+            toolResponse = await listRolesHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_create_role":
+            toolResponse = await createRoleHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_edit_role":
+            toolResponse = await editRoleHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_delete_role":
+            toolResponse = await deleteRoleHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_assign_role":
+            toolResponse = await assignRoleHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_remove_role":
+            toolResponse = await removeRoleHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_list_members":
+            toolResponse = await listMembersHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_get_member":
+            toolResponse = await getMemberHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_create_voice_channel":
+            toolResponse = await createVoiceChannelHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_set_channel_permissions":
+            toolResponse = await setChannelPermissionsHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_remove_channel_permissions":
+            toolResponse = await removeChannelPermissionsHandler(args, this.toolContext);
             return toolResponse;
 
           default:

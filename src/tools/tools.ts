@@ -17,10 +17,13 @@ import {
   readMessagesHandler,
   createCategoryHandler,
   editCategoryHandler,
-  deleteCategoryHandler
+  deleteCategoryHandler,
+  createVoiceChannelHandler,
+  setChannelPermissionsHandler,
+  removeChannelPermissionsHandler
 } from './channel.js';
-import { 
-  getServerInfoHandler, 
+import {
+  getServerInfoHandler,
   listServersHandler,
   searchMessagesHandler
 } from "./server.js";
@@ -36,6 +39,16 @@ import {
   editWebhookHandler,
   deleteWebhookHandler
 } from './webhooks.js';
+import {
+  listRolesHandler,
+  createRoleHandler,
+  editRoleHandler,
+  deleteRoleHandler,
+  assignRoleHandler,
+  removeRoleHandler,
+  listMembersHandler,
+  getMemberHandler
+} from './roles.js';
 
 // Export tool handlers
 export {
@@ -62,6 +75,17 @@ export {
   createCategoryHandler,
   editCategoryHandler,
   deleteCategoryHandler,
+  createVoiceChannelHandler,
+  setChannelPermissionsHandler,
+  removeChannelPermissionsHandler,
+  listRolesHandler,
+  createRoleHandler,
+  editRoleHandler,
+  deleteRoleHandler,
+  assignRoleHandler,
+  removeRoleHandler,
+  listMembersHandler,
+  getMemberHandler,
   listServersHandler,
   searchMessagesHandler
 };
@@ -72,4 +96,4 @@ export { ToolResponse, ToolContext, ToolHandler };
 // Create tool context
 export function createToolContext(client: Client): ToolContext {
   return { client };
-} 
+}
