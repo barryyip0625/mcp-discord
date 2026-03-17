@@ -1,13 +1,16 @@
 import { z } from "zod";
-import { ChannelType } from "discord.js";
+import { ChannelType, PermissionsBitField } from "discord.js";
 import { ToolContext, ToolResponse } from "./types.js";
-import { 
-  CreateTextChannelSchema, 
-  DeleteChannelSchema, 
+import {
+  CreateTextChannelSchema,
+  DeleteChannelSchema,
   ReadMessagesSchema,
   CreateCategorySchema,
   EditCategorySchema,
-  DeleteCategorySchema
+  DeleteCategorySchema,
+  SetChannelPermissionsSchema,
+  RemoveChannelPermissionsSchema,
+  CreateVoiceChannelSchema
 } from "../schemas.js";
 import { handleDiscordError } from "../errorHandler.js";
 
@@ -110,7 +113,7 @@ export async function createTextChannelHandler(
   args: unknown, 
   context: ToolContext
 ): Promise<ToolResponse> {
-  const { guildId, channelName, topic, reason } = CreateTextChannelSchema.parse(args);
+  const { guildId, channelName, topic, categoryId, reason } = CreateTextChannelSchema.parse(args);
   try {
     if (!context.client.isReady()) {
       return {
@@ -133,6 +136,7 @@ export async function createTextChannelHandler(
       type: ChannelType.GuildText
     };
     if (topic) channelOptions.topic = topic;
+    if (categoryId) channelOptions.parent = categoryId;
     if (reason) channelOptions.reason = reason;
     const channel = await guild.channels.create(channelOptions);
 
@@ -246,13 +250,146 @@ export async function readMessagesHandler(
     })).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
     return {
-      content: [{ 
-        type: "text", 
+      content: [{
+        type: "text",
         text: JSON.stringify({
           channelId,
           messageCount: formattedMessages.length,
           messages: formattedMessages
-        }, null, 2) 
+        }, null, 2)
+      }]
+    };
+  } catch (error) {
+    return handleDiscordError(error);
+  }
+}
+
+// Helper to resolve permission strings to bitfield
+function resolvePermissions(perms: string[]): bigint {
+  let bits = BigInt(0);
+  for (const perm of perms) {
+    const flag = PermissionsBitField.Flags[perm as keyof typeof PermissionsBitField.Flags];
+    if (flag !== undefined) {
+      bits |= flag;
+    }
+  }
+  return bits;
+}
+
+// Voice channel creation handler
+export async function createVoiceChannelHandler(
+  args: unknown,
+  context: ToolContext
+): Promise<ToolResponse> {
+  const { guildId, channelName, categoryId, userLimit, reason } = CreateVoiceChannelSchema.parse(args);
+  try {
+    if (!context.client.isReady()) {
+      return {
+        content: [{ type: "text", text: "Discord client not logged in." }],
+        isError: true
+      };
+    }
+    const guild = await context.client.guilds.fetch(guildId);
+    if (!guild) {
+      return {
+        content: [{ type: "text", text: `Cannot find guild with ID: ${guildId}` }],
+        isError: true
+      };
+    }
+    const channelOptions: any = {
+      name: channelName,
+      type: ChannelType.GuildVoice
+    };
+    if (categoryId) channelOptions.parent = categoryId;
+    if (typeof userLimit === "number") channelOptions.userLimit = userLimit;
+    if (reason) channelOptions.reason = reason;
+    const channel = await guild.channels.create(channelOptions);
+    return {
+      content: [{
+        type: "text",
+        text: `Successfully created voice channel "${channelName}" with ID: ${channel.id}`
+      }]
+    };
+  } catch (error) {
+    return handleDiscordError(error);
+  }
+}
+
+// Set channel permission overrides
+export async function setChannelPermissionsHandler(
+  args: unknown,
+  context: ToolContext
+): Promise<ToolResponse> {
+  const { channelId, roleId, allow, deny, reason } = SetChannelPermissionsSchema.parse(args);
+  try {
+    if (!context.client.isReady()) {
+      return {
+        content: [{ type: "text", text: "Discord client not logged in." }],
+        isError: true
+      };
+    }
+    const channel = await context.client.channels.fetch(channelId);
+    if (!channel) {
+      return {
+        content: [{ type: "text", text: `Cannot find channel with ID: ${channelId}` }],
+        isError: true
+      };
+    }
+    if (!('permissionOverwrites' in channel) || !channel.permissionOverwrites) {
+      return {
+        content: [{ type: "text", text: `This channel type does not support permission overrides` }],
+        isError: true
+      };
+    }
+    const overwrite: any = { id: roleId };
+    if (allow && allow.length > 0) overwrite.allow = resolvePermissions(allow);
+    if (deny && deny.length > 0) overwrite.deny = resolvePermissions(deny);
+    await channel.permissionOverwrites.edit(roleId, {
+      ...(allow && allow.length > 0 ? Object.fromEntries(allow.map(p => [p, true])) : {}),
+      ...(deny && deny.length > 0 ? Object.fromEntries(deny.map(p => [p, false])) : {})
+    }, { reason: reason || "Permissions updated via API" });
+    return {
+      content: [{
+        type: "text",
+        text: `Successfully updated permissions for role/user ${roleId} on channel ${channelId}`
+      }]
+    };
+  } catch (error) {
+    return handleDiscordError(error);
+  }
+}
+
+// Remove channel permission overrides
+export async function removeChannelPermissionsHandler(
+  args: unknown,
+  context: ToolContext
+): Promise<ToolResponse> {
+  const { channelId, roleId, reason } = RemoveChannelPermissionsSchema.parse(args);
+  try {
+    if (!context.client.isReady()) {
+      return {
+        content: [{ type: "text", text: "Discord client not logged in." }],
+        isError: true
+      };
+    }
+    const channel = await context.client.channels.fetch(channelId);
+    if (!channel) {
+      return {
+        content: [{ type: "text", text: `Cannot find channel with ID: ${channelId}` }],
+        isError: true
+      };
+    }
+    if (!('permissionOverwrites' in channel) || !channel.permissionOverwrites) {
+      return {
+        content: [{ type: "text", text: `This channel type does not support permission overrides` }],
+        isError: true
+      };
+    }
+    await channel.permissionOverwrites.delete(roleId, reason || "Permission override removed via API");
+    return {
+      content: [{
+        type: "text",
+        text: `Successfully removed permission overrides for role/user ${roleId} on channel ${channelId}`
       }]
     };
   } catch (error) {

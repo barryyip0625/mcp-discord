@@ -129,13 +129,14 @@ export const toolList = [
   },
   {
     name: "discord_create_text_channel",
-    description: "Creates a new text channel in a Discord server with an optional topic",
+    description: "Creates a new text channel in a Discord server with an optional topic and parent category",
     inputSchema: {
       type: "object",
       properties: {
         guildId: { type: "string" },
         channelName: { type: "string" },
-        topic: { type: "string" }
+        topic: { type: "string" },
+        categoryId: { type: "string", description: "Parent category ID to place the channel under" }
       },
       required: ["guildId", "channelName"]
     }
@@ -377,6 +378,162 @@ export const toolList = [
         offset: { type: "number", description: "Number of messages to skip (for pagination)" }
       },
       required: ["guildId"]
+    }
+  },
+  {
+    name: "discord_list_roles",
+    description: "Lists all roles in a Discord server with their properties",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string" }
+      },
+      required: ["guildId"]
+    }
+  },
+  {
+    name: "discord_create_role",
+    description: "Creates a new role in a Discord server",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string" },
+        name: { type: "string" },
+        color: { type: "string", description: "Hex color string (e.g. '#FF0000') or color name" },
+        hoist: { type: "boolean", description: "Whether the role should be displayed separately in the sidebar" },
+        mentionable: { type: "boolean", description: "Whether the role can be mentioned by anyone" },
+        permissions: { type: "array", items: { type: "string" }, description: "Array of permission flag names (e.g. ['SendMessages', 'ViewChannel'])" },
+        reason: { type: "string" }
+      },
+      required: ["guildId", "name"]
+    }
+  },
+  {
+    name: "discord_edit_role",
+    description: "Edits an existing role in a Discord server",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string" },
+        roleId: { type: "string" },
+        name: { type: "string" },
+        color: { type: "string", description: "Hex color string (e.g. '#FF0000') or color name" },
+        hoist: { type: "boolean" },
+        mentionable: { type: "boolean" },
+        permissions: { type: "array", items: { type: "string" }, description: "Array of permission flag names" },
+        position: { type: "number", description: "New position in the role hierarchy" },
+        reason: { type: "string" }
+      },
+      required: ["guildId", "roleId"]
+    }
+  },
+  {
+    name: "discord_delete_role",
+    description: "Deletes a role from a Discord server",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string" },
+        roleId: { type: "string" },
+        reason: { type: "string" }
+      },
+      required: ["guildId", "roleId"]
+    }
+  },
+  {
+    name: "discord_assign_role",
+    description: "Assigns a role to a member in a Discord server",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string" },
+        userId: { type: "string" },
+        roleId: { type: "string" },
+        reason: { type: "string" }
+      },
+      required: ["guildId", "userId", "roleId"]
+    }
+  },
+  {
+    name: "discord_remove_role",
+    description: "Removes a role from a member in a Discord server",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string" },
+        userId: { type: "string" },
+        roleId: { type: "string" },
+        reason: { type: "string" }
+      },
+      required: ["guildId", "userId", "roleId"]
+    }
+  },
+  {
+    name: "discord_list_members",
+    description: "Lists members in a Discord server with their roles",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string" },
+        limit: { type: "number", description: "Maximum number of members to return (default 100, max 1000)", minimum: 1, maximum: 1000, default: 100 },
+        after: { type: "string", description: "User ID to paginate after" }
+      },
+      required: ["guildId"]
+    }
+  },
+  {
+    name: "discord_get_member",
+    description: "Gets detailed information about a specific member in a Discord server",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string" },
+        userId: { type: "string" }
+      },
+      required: ["guildId", "userId"]
+    }
+  },
+  {
+    name: "discord_create_voice_channel",
+    description: "Creates a new voice channel in a Discord server with an optional parent category",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string" },
+        channelName: { type: "string" },
+        categoryId: { type: "string", description: "Parent category ID to place the channel under" },
+        userLimit: { type: "number", description: "Maximum number of users allowed (0 for unlimited)", minimum: 0, maximum: 99 },
+        reason: { type: "string" }
+      },
+      required: ["guildId", "channelName"]
+    }
+  },
+  {
+    name: "discord_set_channel_permissions",
+    description: "Sets permission overrides for a role or user on a channel or category",
+    inputSchema: {
+      type: "object",
+      properties: {
+        channelId: { type: "string", description: "Channel or category ID" },
+        roleId: { type: "string", description: "Role or user ID to set permissions for" },
+        allow: { type: "array", items: { type: "string" }, description: "Permission flags to allow (e.g. ['ViewChannel', 'SendMessages'])" },
+        deny: { type: "array", items: { type: "string" }, description: "Permission flags to deny (e.g. ['ViewChannel', 'SendMessages'])" },
+        reason: { type: "string" }
+      },
+      required: ["channelId", "roleId"]
+    }
+  },
+  {
+    name: "discord_remove_channel_permissions",
+    description: "Removes all permission overrides for a role or user on a channel or category",
+    inputSchema: {
+      type: "object",
+      properties: {
+        channelId: { type: "string", description: "Channel or category ID" },
+        roleId: { type: "string", description: "Role or user ID to remove overrides for" },
+        reason: { type: "string" }
+      },
+      required: ["channelId", "roleId"]
     }
   }
 ]; 

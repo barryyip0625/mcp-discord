@@ -49,12 +49,11 @@ export const ReplyToForumSchema = z.object({
 });
 
 export const CreateTextChannelSchema = z.object({
-    guildId: z.string({ description: "The ID of the server (guild) where the text channel will be created." }),
-    channelName: z.string({ description: "The name for the new text channel." }),
-    topic: z.string({ description: "The (optional) topic/description for the channel." }).optional(),
-    reason: z.string({ description: "Optional reason for audit logs when creating the channel." }).optional()
-}, {
-    description: "Create a new text channel in a specified server (guild)."
+    guildId: z.string(),
+    channelName: z.string(),
+    topic: z.string().optional(),
+    categoryId: z.string().optional(),
+    reason: z.string().optional()
 });
 
 // Category schemas
@@ -202,6 +201,88 @@ export const DeleteWebhookSchema = z.object({
 
 export const ListServersSchema = z.object({}, {
     description: "List all servers (guilds) the bot is a member of."
+});
+
+// Role schemas
+export const ListRolesSchema = z.object({
+    guildId: z.string()
+});
+
+export const CreateRoleSchema = z.object({
+    guildId: z.string(),
+    name: z.string(),
+    color: z.string().optional(),
+    hoist: z.boolean().optional(),
+    mentionable: z.boolean().optional(),
+    permissions: z.array(z.string()).optional(),
+    reason: z.string().optional()
+});
+
+export const EditRoleSchema = z.object({
+    guildId: z.string(),
+    roleId: z.string(),
+    name: z.string().optional(),
+    color: z.string().optional(),
+    hoist: z.boolean().optional(),
+    mentionable: z.boolean().optional(),
+    permissions: z.array(z.string()).optional(),
+    position: z.number().optional(),
+    reason: z.string().optional()
+});
+
+export const DeleteRoleSchema = z.object({
+    guildId: z.string(),
+    roleId: z.string(),
+    reason: z.string().optional()
+});
+
+export const AssignRoleSchema = z.object({
+    guildId: z.string(),
+    userId: z.string(),
+    roleId: z.string(),
+    reason: z.string().optional()
+});
+
+export const RemoveRoleSchema = z.object({
+    guildId: z.string(),
+    userId: z.string(),
+    roleId: z.string(),
+    reason: z.string().optional()
+});
+
+export const ListMembersSchema = z.object({
+    guildId: z.string(),
+    limit: z.number().min(1).max(1000).optional().default(100),
+    after: z.string().optional()
+});
+
+export const GetMemberSchema = z.object({
+    guildId: z.string(),
+    userId: z.string()
+});
+
+// Channel permission schemas
+export const SetChannelPermissionsSchema = z.object({
+    channelId: z.string(),
+    roleId: z.string(),
+    allow: z.array(z.string()).optional(),
+    deny: z.array(z.string()).optional(),
+    reason: z.string().optional()
+});
+
+export const RemoveChannelPermissionsSchema = z.object({
+    channelId: z.string(),
+    roleId: z.string(),
+    reason: z.string().optional()
+});
+
+// Voice channel schema
+export const CreateVoiceChannelSchema = z.object({
+    guildId: z.string(),
+    channelName: z.string(),
+    categoryId: z.string().optional(),
+    userLimit: z.number().min(0).max(99).optional(),
+    reason: z.string().optional()
 });
 
 export const SearchMessagesSchema = z.object({
