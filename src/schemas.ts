@@ -35,6 +35,12 @@ export const GetForumPostSchema = z.object({
     description: "Get details of a specific forum post (thread) by its ID."
 });
 
+export const ListForumThreadsSchema = z.object({
+    forumChannelId: z.string(),
+    includeArchived: z.boolean().optional().default(true),
+    limit: z.number().min(1).max(100).optional().default(100)
+});
+
 export const ReplyToForumSchema = z.object({
     threadId: z.string({ description: "The ID of the forum thread to reply to." }),
     message: z.string({ description: "The content of the reply message." })

@@ -103,6 +103,19 @@ export const toolList = [
     }
   },
   {
+    name: "discord_list_forum_threads",
+    description: "Lists all threads (posts) in a Discord forum channel, including both active and archived threads",
+    inputSchema: {
+      type: "object",
+      properties: {
+        forumChannelId: { type: "string", description: "The ID of the forum channel to list threads from" },
+        includeArchived: { type: "boolean", description: "Whether to include archived threads (default: true)", default: true },
+        limit: { type: "number", description: "Maximum number of archived threads to fetch (default: 100, max: 100)", minimum: 1, maximum: 100, default: 100 }
+      },
+      required: ["forumChannelId"]
+    }
+  },
+  {
     name: "discord_reply_to_forum",
     description: "Adds a reply to an existing forum post or thread",
     inputSchema: {

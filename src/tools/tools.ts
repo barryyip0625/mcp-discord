@@ -3,10 +3,11 @@ import { z } from "zod";
 import { ToolResponse, ToolContext, ToolHandler } from "./types.js";
 import { loginHandler } from './login.js';
 import { sendMessageHandler } from './send-message.js';
-import { 
-  getForumChannelsHandler, 
-  createForumPostHandler, 
-  getForumPostHandler, 
+import {
+  getForumChannelsHandler,
+  createForumPostHandler,
+  getForumPostHandler,
+  listForumThreadsHandler,
   replyToForumHandler,
   deleteForumPostHandler
 } from './forum.js';
@@ -43,6 +44,7 @@ export {
   getForumChannelsHandler,
   createForumPostHandler,
   getForumPostHandler,
+  listForumThreadsHandler,
   replyToForumHandler,
   deleteForumPostHandler,
   createTextChannelHandler,

@@ -95,15 +95,30 @@ You can run mcp-discord using Docker. The Docker images are automatically built 
 
 **Docker Hub Repository**: [barryy625/mcp-discord](https://hub.docker.com/r/barryy625/mcp-discord)
 
+Docker container uses `stdio` by default.
+
 ```bash
 # Pull the latest image
 docker pull barryy625/mcp-discord:latest
 
 # Run with environment variable
-docker run -e DISCORD_TOKEN=your_discord_bot_token -p 8080:8080 barryy625/mcp-discord:latest
+docker run -e DISCORD_TOKEN=your_discord_bot_token barryy625/mcp-discord:latest
 
 # Or run with command line config
-docker run -p 8080:8080 barryy625/mcp-discord:latest --config "your_discord_bot_token"
+docker run barryy625/mcp-discord:latest --config "your_discord_bot_token"
+```
+
+Alternatively, override the `--transport` and `--port` flags to run `http` on a port of your choosing. In this case, also map the ports.
+
+```bash
+# Pull the latest image
+docker pull barryy625/mcp-discord:latest
+
+# Run with environment variable
+docker run -e DISCORD_TOKEN=your_discord_bot_token -p 8080:8080 barryy625/mcp-discord:latest --transport http --port 8081
+
+# Or run with command line config
+docker run -p 8080:8080 barryy625/mcp-discord:latest --config "your_discord_bot_token" --transport http --port 8081
 ```
 
 **Available Tags:**

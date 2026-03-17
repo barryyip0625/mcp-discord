@@ -1,5 +1,5 @@
 import { ChannelType, ForumChannel } from 'discord.js';
-import { GetForumChannelsSchema, CreateForumPostSchema, GetForumPostSchema, ReplyToForumSchema, DeleteForumPostSchema } from '../schemas.js';
+import { GetForumChannelsSchema, CreateForumPostSchema, GetForumPostSchema, ListForumThreadsSchema, ReplyToForumSchema, DeleteForumPostSchema } from '../schemas.js';
 import { ToolHandler } from './types.js';
 import { handleDiscordError } from "../errorHandler.js";
 
@@ -139,6 +139,99 @@ export const getForumPostHandler: ToolHandler = async (args, { client }) => {
 
     return {
       content: [{ type: "text", text: JSON.stringify(threadDetails, null, 2) }]
+    };
+  } catch (error) {
+    return handleDiscordError(error);
+  }
+};
+
+export const listForumThreadsHandler: ToolHandler = async (args, { client }) => {
+  const { forumChannelId, includeArchived, limit } = ListForumThreadsSchema.parse(args);
+
+  try {
+    if (!client.isReady()) {
+      return {
+        content: [{ type: "text", text: "Discord client not logged in." }],
+        isError: true
+      };
+    }
+
+    const channel = await client.channels.fetch(forumChannelId);
+    if (!channel || channel.type !== ChannelType.GuildForum) {
+      return {
+        content: [{ type: "text", text: `Channel ID ${forumChannelId} is not a forum channel.` }],
+        isError: true
+      };
+    }
+
+    const forumChannel = channel as ForumChannel;
+
+    // Fetch active threads
+    const activeThreads = await forumChannel.threads.fetchActive();
+
+    // Fetch archived threads if requested
+    let archivedThreads: typeof activeThreads | null = null;
+    if (includeArchived) {
+      archivedThreads = await forumChannel.threads.fetchArchived({ limit: limit });
+    }
+
+    // Combine and format thread information
+    const threads: Array<{
+      id: string;
+      name: string;
+      createdAt: Date | null;
+      archived: boolean;
+      locked: boolean;
+      messageCount: number | null;
+      ownerId: string | null;
+    }> = [];
+
+    // Add active threads
+    activeThreads.threads.forEach(thread => {
+      threads.push({
+        id: thread.id,
+        name: thread.name,
+        createdAt: thread.createdAt,
+        archived: thread.archived || false,
+        locked: thread.locked || false,
+        messageCount: thread.messageCount,
+        ownerId: thread.ownerId
+      });
+    });
+
+    // Add archived threads if fetched
+    if (archivedThreads) {
+      archivedThreads.threads.forEach(thread => {
+        // Avoid duplicates
+        if (!threads.find(t => t.id === thread.id)) {
+          threads.push({
+            id: thread.id,
+            name: thread.name,
+            createdAt: thread.createdAt,
+            archived: thread.archived || false,
+            locked: thread.locked || false,
+            messageCount: thread.messageCount,
+            ownerId: thread.ownerId
+          });
+        }
+      });
+    }
+
+    // Sort by creation date (newest first)
+    threads.sort((a, b) => {
+      if (!a.createdAt || !b.createdAt) return 0;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          forumChannelId,
+          totalThreads: threads.length,
+          threads
+        }, null, 2)
+      }]
     };
   } catch (error) {
     return handleDiscordError(error);

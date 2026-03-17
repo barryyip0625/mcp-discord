@@ -13,6 +13,7 @@ import {
   getForumChannelsHandler,
   createForumPostHandler,
   getForumPostHandler,
+  listForumThreadsHandler,
   replyToForumHandler,
   deleteForumPostHandler,
   createTextChannelHandler,
@@ -108,6 +109,11 @@ export class DiscordMCPServer {
           case "discord_get_forum_post":
             this.logClientState("before discord_get_forum_post handler");
             toolResponse = await getForumPostHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_list_forum_threads":
+            this.logClientState("before discord_list_forum_threads handler");
+            toolResponse = await listForumThreadsHandler(args, this.toolContext);
             return toolResponse;
 
           case "discord_reply_to_forum":
