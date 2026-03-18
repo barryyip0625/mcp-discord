@@ -11,10 +11,13 @@ import {
   replyToForumHandler,
   deleteForumPostHandler,
   getForumTagsHandler,
+  setForumTagsHandler,
   updateForumPostHandler
 } from './forum.js';
 import {
   createTextChannelHandler,
+  createForumChannelHandler,
+  editChannelHandler,
   deleteChannelHandler,
   readMessagesHandler,
   createCategoryHandler,
@@ -63,9 +66,12 @@ export {
   replyToForumHandler,
   deleteForumPostHandler,
   getForumTagsHandler,
+  setForumTagsHandler,
   updateForumPostHandler,
   editMessageHandler,
   createTextChannelHandler,
+  createForumChannelHandler,
+  editChannelHandler,
   deleteChannelHandler,
   readMessagesHandler,
   getServerInfoHandler,

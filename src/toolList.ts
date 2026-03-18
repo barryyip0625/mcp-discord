@@ -142,6 +142,36 @@ export const toolList = [
     }
   },
   {
+    name: "discord_create_forum_channel",
+    description: "Creates a new forum channel in a Discord server, optionally under a category",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string" },
+        name: { type: "string" },
+        topic: { type: "string", description: "The forum channel guidelines/description" },
+        categoryId: { type: "string", description: "The ID of the parent category to create the channel under" }
+      },
+      required: ["guildId", "name"]
+    }
+  },
+  {
+    name: "discord_edit_channel",
+    description: "Edits a Discord channel's name, topic, parent category, or position",
+    inputSchema: {
+      type: "object",
+      properties: {
+        channelId: { type: "string", description: "The ID of the channel to edit" },
+        name: { type: "string", description: "New name for the channel" },
+        topic: { type: "string", description: "New topic for the channel" },
+        parentId: { type: "string", description: "The ID of a category to move the channel under" },
+        position: { type: "number", description: "New position of the channel in the list" },
+        reason: { type: "string", description: "Reason for editing (shown in audit log)" }
+      },
+      required: ["channelId"]
+    }
+  },
+  {
     name: "discord_delete_channel",
     description: "Deletes a Discord channel with an optional reason",
     inputSchema: {
@@ -245,6 +275,30 @@ export const toolList = [
         forumChannelId: { type: "string", description: "The ID of the forum channel to get tags from" }
       },
       required: ["forumChannelId"]
+    }
+  },
+  {
+    name: "discord_set_forum_tags",
+    description: "Sets the available tags for a Discord forum channel. Replaces all existing tags.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        forumChannelId: { type: "string", description: "The ID of the forum channel to set tags on" },
+        tags: {
+          type: "array",
+          description: "Array of tag objects to set on the forum channel",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Tag name" },
+              emoji: { type: "string", description: "Unicode emoji for the tag (e.g. '🔬')" },
+              moderated: { type: "boolean", description: "Whether only moderators can apply this tag (default: false)" }
+            },
+            required: ["name"]
+          }
+        }
+      },
+      required: ["forumChannelId", "tags"]
     }
   },
   {

@@ -56,6 +56,27 @@ export const CreateTextChannelSchema = z.object({
     reason: z.string().optional()
 });
 
+export const CreateForumChannelSchema = z.object({
+    guildId: z.string({ description: "The ID of the server (guild) to create the forum channel in." }),
+    name: z.string({ description: "The name of the forum channel to create." }),
+    topic: z.string({ description: "The forum channel guidelines/description." }).optional(),
+    categoryId: z.string({ description: "The ID of the parent category to create the channel under." }).optional(),
+    reason: z.string({ description: "Optional reason for audit logs." }).optional()
+}, {
+    description: "Create a new forum channel in a specified server (guild), optionally under a category."
+});
+
+export const EditChannelSchema = z.object({
+    channelId: z.string({ description: "The ID of the channel to edit." }),
+    name: z.string({ description: "New name for the channel." }).optional(),
+    topic: z.string({ description: "New topic for the channel." }).optional(),
+    parentId: z.string({ description: "The ID of a category to move the channel under." }).optional(),
+    position: z.number({ description: "New position of the channel in the list." }).optional(),
+    reason: z.string({ description: "Optional reason for audit logs." }).optional()
+}, {
+    description: "Edit a Discord channel's name, topic, parent category, or position."
+});
+
 // Category schemas
 export const CreateCategorySchema = z.object({
     guildId: z.string({ description: "The ID of the server (guild) where the category will be created." }),
@@ -144,6 +165,17 @@ export const UpdateForumPostSchema = z.object({
     tags: z.array(z.string()).optional(),
     archived: z.boolean().optional(),
     locked: z.boolean().optional()
+});
+
+export const SetForumTagsSchema = z.object({
+    forumChannelId: z.string({ description: "The ID of the forum channel to set tags on." }),
+    tags: z.array(z.object({
+        name: z.string({ description: "Tag name." }),
+        emoji: z.string({ description: "Unicode emoji for the tag (e.g. '🔬')." }).optional(),
+        moderated: z.boolean({ description: "Whether only moderators can apply this tag (default: false)." }).optional()
+    }))
+}, {
+    description: "Sets the available tags for a Discord forum channel. Replaces all existing tags."
 });
 
 export const EditMessageSchema = z.object({

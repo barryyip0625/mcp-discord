@@ -1,5 +1,5 @@
 import { ChannelType, ForumChannel } from 'discord.js';
-import { GetForumChannelsSchema, CreateForumPostSchema, GetForumPostSchema, ListForumThreadsSchema, ReplyToForumSchema, DeleteForumPostSchema, GetForumTagsSchema, UpdateForumPostSchema } from '../schemas.js';
+import { GetForumChannelsSchema, CreateForumPostSchema, GetForumPostSchema, ListForumThreadsSchema, ReplyToForumSchema, DeleteForumPostSchema, GetForumTagsSchema, SetForumTagsSchema, UpdateForumPostSchema } from '../schemas.js';
 import { ToolHandler } from './types.js';
 import { handleDiscordError } from "../errorHandler.js";
 
@@ -340,6 +340,45 @@ export const getForumTagsHandler: ToolHandler = async (args, { client }) => {
 
     return {
       content: [{ type: "text", text: JSON.stringify(tags, null, 2) }]
+    };
+  } catch (error) {
+    return handleDiscordError(error);
+  }
+};
+
+export const setForumTagsHandler: ToolHandler = async (args, { client }) => {
+  const { forumChannelId, tags } = SetForumTagsSchema.parse(args);
+
+  try {
+    if (!client.isReady()) {
+      return {
+        content: [{ type: "text", text: "Discord client not logged in." }],
+        isError: true
+      };
+    }
+
+    const channel = await client.channels.fetch(forumChannelId);
+    if (!channel || channel.type !== ChannelType.GuildForum) {
+      return {
+        content: [{ type: "text", text: `Channel ID ${forumChannelId} is not a forum channel.` }],
+        isError: true
+      };
+    }
+
+    const forumChannel = channel as ForumChannel;
+    const newTags = tags.map(tag => ({
+      name: tag.name,
+      moderated: tag.moderated ?? false,
+      emoji: tag.emoji ? { name: tag.emoji } : null
+    }));
+
+    await forumChannel.setAvailableTags(newTags as any);
+
+    return {
+      content: [{
+        type: "text",
+        text: `Successfully set ${tags.length} tag(s) on forum channel ${forumChannelId}: ${tags.map(t => t.name).join(', ')}`
+      }]
     };
   } catch (error) {
     return handleDiscordError(error);
