@@ -1,4 +1,4 @@
-import { Server } from '@modelcontextprotocol/sdk/server'
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 
 export type Level = 'debug' | 'info' | 'notice' | 'warning' | 'error' | 'critical' | 'alert' | 'emergency';
 
@@ -21,8 +21,9 @@ export function setLevel(level: Level) {
     return true;
 }
 
-export function log(server: Server, message: string, level: Level = 'info') {
+export function log(server: Server | null | undefined, message: string, level: Level = 'info') {
     if (levelPriority[level] < levelPriority[currentLevel]) return;
+    if (!server?.transport) return;
     server.sendLoggingMessage(
         {
             level: level,
@@ -32,14 +33,14 @@ export function log(server: Server, message: string, level: Level = 'info') {
     );
 }
 
-export function info(server: Server, message: string) {
+export function info(server: Server | null | undefined, message: string) {
     log(server, message, 'info');
 }
 
-export function warning(server: Server, message: string) {
+export function warning(server: Server | null | undefined, message: string) {
     log(server, message, 'warning');
 }
 
-export function error(server: Server, message: string) {
+export function error(server: Server | null | undefined, message: string) {
     log(server, message, 'error');
 }
