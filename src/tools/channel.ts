@@ -15,6 +15,7 @@ import {
   CreateVoiceChannelSchema
 } from "../schemas.js";
 import { handleDiscordError } from "../errorHandler.js";
+import { resolveSnowflakeOrDate } from "../utils/snowflake.js";
 
   // Category creation handler
 export async function createCategoryHandler(
@@ -292,7 +293,7 @@ export async function readMessagesHandler(
   args: unknown, 
   context: ToolContext
 ): Promise<ToolResponse> {
-  const { channelId, limit } = ReadMessagesSchema.parse(args);
+  const { channelId, limit, before, after, around } = ReadMessagesSchema.parse(args);
   try {
     if (!context.client.isReady()) {
       return {
@@ -317,8 +318,14 @@ export async function readMessagesHandler(
       };
     }
 
+    // Build fetch options
+    const fetchOptions: { limit: number; before?: string; after?: string; around?: string } = { limit };
+    if (before) fetchOptions.before = resolveSnowflakeOrDate(before);
+    if (after) fetchOptions.after = resolveSnowflakeOrDate(after);
+    if (around) fetchOptions.around = resolveSnowflakeOrDate(around);
+
     // Fetch messages
-    const messages = await channel.messages.fetch({ limit });
+    const messages = await channel.messages.fetch(fetchOptions);
     
     if (messages.size === 0) {
       return {

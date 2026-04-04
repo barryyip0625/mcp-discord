@@ -185,7 +185,7 @@ export const toolList = [
   },
   {
     name: "discord_read_messages",
-    description: "Retrieves messages from a Discord text channel with a configurable limit",
+    description: "Retrieves messages from a Discord text channel. Supports date-based filtering via before/after/around params (accepts snowflake IDs or ISO 8601 dates).",
     inputSchema: {
       type: "object",
       properties: {
@@ -195,7 +195,10 @@ export const toolList = [
           minimum: 1,
           maximum: 100,
           default: 50
-        }
+        },
+        before: { type: "string", description: "Snowflake ID or ISO 8601 date (e.g. '2025-03-01T00:00:00Z'). Get messages before this point." },
+        after: { type: "string", description: "Snowflake ID or ISO 8601 date (e.g. '2025-03-01T00:00:00Z'). Get messages after this point." },
+        around: { type: "string", description: "Snowflake ID or ISO 8601 date (e.g. '2025-03-01T00:00:00Z'). Get messages around this point." }
       },
       required: ["channelId"]
     }

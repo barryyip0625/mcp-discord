@@ -292,7 +292,7 @@ Important notes:
 ### Messages and Reactions
 
 - `discord_search_messages`: Search messages in a server
-- `discord_read_messages`: Read channel messages
+- `discord_read_messages`: Read channel messages (supports `before`, `after`, `around` params — accepts snowflake IDs or ISO 8601 dates like `"2025-03-01T00:00:00Z"`)
 - `discord_edit_message`: Edit a bot-authored message
 - `discord_add_reaction`: Add a reaction to a message
 - `discord_add_multiple_reactions`: Add multiple reactions to a message

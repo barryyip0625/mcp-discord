@@ -112,10 +112,14 @@ export const DeleteChannelSchema = z.object({
 
 export const ReadMessagesSchema = z.object({
     channelId: z.string({ description: "The ID of the channel to read messages from." }),
-    limit: z.number({ description: "How many recent messages to fetch (1-100)." }).min(1).max(100).optional().default(50)
-}, {
-    description: "Read recent messages from a specified channel."
-});
+    limit: z.number({ description: "How many recent messages to fetch (1-100)." }).min(1).max(100).optional().default(50),
+    before: z.string({ description: "Snowflake ID or ISO 8601 date (e.g. '2025-03-01T00:00:00Z'). Get messages before this point." }).optional(),
+    after: z.string({ description: "Snowflake ID or ISO 8601 date (e.g. '2025-03-01T00:00:00Z'). Get messages after this point." }).optional(),
+    around: z.string({ description: "Snowflake ID or ISO 8601 date (e.g. '2025-03-01T00:00:00Z'). Get messages around this point." }).optional(),
+}).refine(
+    (data) => [data.before, data.after, data.around].filter(Boolean).length <= 1,
+    { message: "Only one of 'before', 'after', or 'around' can be specified." }
+);
 
 export const GetServerInfoSchema = z.object({
     guildId: z.string({ description: "The ID of the server (guild) to get information for." })
