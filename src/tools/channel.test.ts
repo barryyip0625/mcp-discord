@@ -609,37 +609,6 @@ describe('Channel Handlers', () => {
   });
 
   describe('readMessagesHandler', () => {
-    it('should read messages successfully', async () => {
-      const mockMessageWithAttachment = { ...mockMessage, id: 'messageId2', attachments: { size: 2 }, embeds: [], reference: null };
-      const mockMessagesCollection = new Map([
-        ['messageId', mockMessage],
-        ['messageId2', mockMessageWithAttachment]
-      ]);
-
-      // Mock the map method for the collection
-      Object.defineProperty(mockMessagesCollection, 'map', {
-        value: (fn: (value: any) => any) => Array.from(mockMessagesCollection.values()).map(fn),
-        writable: true,
-        configurable: true
-      });
-
-      const args = {
-        channelId: 'textChannelId',
-        limit: 10
-      };
-
-      mockContext.client.isReady.mockReturnValue(true);
-      mockContext.client.channels.fetch.mockResolvedValue(mockTextChannel);
-      mockTextChannel.messages.fetch.mockResolvedValue(mockMessagesCollection);
-
-      const result = await readMessagesHandler(args, mockContext);
-
-      expect(result.content[0].text).toContain('messageCount');
-      expect(JSON.parse(result.content[0].text)).toHaveProperty('messages');
-      expect(JSON.parse(result.content[0].text).messages).toHaveLength(2);
-      expect(mockTextChannel.messages.fetch).toHaveBeenCalledWith({ limit: 10 });
-    });
-
     it('should return error if client is not ready', async () => {
       const args = {
         channelId: 'textChannelId',

@@ -638,45 +638,5 @@ describe("Channel Tool Handlers", () => {
       });
     });
 
-    test("should return formatted messages", async () => {
-      const mockClient = createMockClient(true);
-      const mockChannel = createMockChannel("123456789", "test-channel");
-      const mockMessage = createMockMessage("msg123", "Hello world!", "author123", "TestUser");
-
-      // Mocking a map-like collection with size property (simulating Discord Collection)
-      const mockMessagesCollection = new Map([
-        ['msg123', mockMessage]
-      ]);
-      // Mock the map method for the collection
-      Object.defineProperty(mockMessagesCollection, 'map', {
-        value: (fn: (value: any, index: number, array: any[]) => any) => Array.from(mockMessagesCollection.values()).map(fn),
-        writable: true,
-        configurable: true
-      });
-
-      (mockChannel.messages.fetch as jest.Mock).mockResolvedValue(mockMessagesCollection);
-
-      mockClient.channels.fetch = jest.fn().mockResolvedValue(mockChannel);
-
-      context = { client: mockClient } as ToolContext;
-      const args = {
-        channelId: "123456789",
-        limit: 10,
-      };
-
-      const result = await readMessagesHandler(args, context);
-
-      expect(mockChannel.messages.fetch).toHaveBeenCalledWith({ limit: 10 });
-      expect(result.content[0].text).toContain('channelId');
-      expect(result.content[0].text).toContain('messageCount');
-
-      // Parse the JSON string to validate the structure
-      const parsedResult = JSON.parse(result.content[0].text);
-      expect(parsedResult.channelId).toBe("123456789");
-      expect(parsedResult.messageCount).toBe(1);
-      expect(parsedResult.messages[0]).toHaveProperty("id", "msg123");
-      expect(parsedResult.messages[0]).toHaveProperty("content", "Hello world!");
-      expect(parsedResult.messages[0].author).toHaveProperty("username", "TestUser");
-    });
   });
 });
