@@ -114,26 +114,49 @@ try {
     await mcpServer.start();
     info('MCP server started successfully');
     
+    // Unified shutdown, registered for every transport. In stdio mode there
+    // was previously no shutdown path at all, so the health-check interval and
+    // the discord.js client kept the event loop alive until the host SIGKILLed
+    // the process (~185s). Route every termination trigger through one
+    // idempotent, bounded shutdown.
+    let heartbeat: NodeJS.Timeout | null = null;
+    let shuttingDown = false;
+
+    const shutdown = async (reason: string) => {
+        if (shuttingDown) return;            // idempotent
+        shuttingDown = true;
+        error(`Shutting down (${reason})...`);
+
+        // Bounded: if graceful close stalls (e.g. a hung Discord WS), force exit.
+        const force = setTimeout(() => {
+            error('Graceful shutdown timed out; forcing exit.');
+            process.exit(0);
+        }, 3000);
+        force.unref();                       // don't let the backstop itself pin the loop
+
+        if (heartbeat) { clearInterval(heartbeat); heartbeat = null; }
+        try {
+            await mcpServer.stop();          // clears health interval, closes transport, destroys client
+        } catch (err) {
+            error('Error during shutdown: ' + String(err));
+        }
+        process.exit(0);
+    };
+
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    // Gateway closing the pipe: a pipe writer-close surfaces as 'close', while a
+    // plain EOF surfaces as 'end'. Handle both; shutdown() is idempotent.
+    process.stdin.on('close', () => shutdown('stdin close'));
+    process.stdin.on('end', () => shutdown('stdin end'));
+
     // Keep the Node.js process running
     if (config.TRANSPORT.toLowerCase() === 'http') {
         // Send a heartbeat every 30 seconds to keep the process alive
-        setInterval(() => {
+        heartbeat = setInterval(() => {
             info('MCP server is running');
         }, 30000);
-        
-        // Handle termination signals
-        process.on('SIGINT', async () => {
-            info('Received SIGINT. Shutting down server...');
-            await mcpServer.stop();
-            process.exit(0);
-        });
-        
-        process.on('SIGTERM', async () => {
-            info('Received SIGTERM. Shutting down server...');
-            await mcpServer.stop();
-            process.exit(0);
-        });
-        
+
         info('Server running in keep-alive mode. Press Ctrl+C to stop.');
     }
 } catch (err) {
