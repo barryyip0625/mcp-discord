@@ -3,6 +3,19 @@ import { GetForumChannelsSchema, CreateForumPostSchema, GetForumPostSchema, List
 import { ToolHandler } from './types.js';
 import { handleDiscordError } from "../errorHandler.js";
 
+// Resolve applied forum-tag IDs to { id, name } using the parent forum's available tags.
+type ResolvedForumTag = { id: string; name: string | null };
+
+function resolveAppliedTags(
+  appliedTagIds: readonly string[] | null | undefined,
+  availableTags: readonly { id: string; name: string }[]
+): ResolvedForumTag[] {
+  return (appliedTagIds ?? []).map((id) => {
+    const match = availableTags.find((tag) => tag.id === id);
+    return { id, name: match ? match.name : null };
+  });
+}
+
 export const getForumChannelsHandler: ToolHandler = async (args, { client }) => {
   const { guildId } = GetForumChannelsSchema.parse(args);
   
@@ -122,13 +135,20 @@ export const getForumPostHandler: ToolHandler = async (args, { client }) => {
 
     // Get messages from the thread
     const messages = await thread.messages.fetch({ limit: 10 });
-    
+
+    // Resolve applied tags (forum posts only) to { id, name }
+    const parent = thread.parent;
+    const availableTags = parent && parent.type === ChannelType.GuildForum
+      ? (parent as ForumChannel).availableTags
+      : [];
+
     const threadDetails = {
       id: thread.id,
       name: thread.name,
       parentId: thread.parentId,
       messageCount: messages.size,
       createdAt: thread.createdAt,
+      appliedTags: resolveAppliedTags(thread.appliedTags, availableTags),
       messages: messages.map(msg => ({
         id: msg.id,
         content: msg.content,
@@ -184,6 +204,7 @@ export const listForumThreadsHandler: ToolHandler = async (args, { client }) => 
       locked: boolean;
       messageCount: number | null;
       ownerId: string | null;
+      appliedTags: ResolvedForumTag[];
     }> = [];
 
     // Add active threads
@@ -195,7 +216,8 @@ export const listForumThreadsHandler: ToolHandler = async (args, { client }) => 
         archived: thread.archived || false,
         locked: thread.locked || false,
         messageCount: thread.messageCount,
-        ownerId: thread.ownerId
+        ownerId: thread.ownerId,
+        appliedTags: resolveAppliedTags(thread.appliedTags, forumChannel.availableTags)
       });
     });
 
@@ -211,7 +233,8 @@ export const listForumThreadsHandler: ToolHandler = async (args, { client }) => 
             archived: thread.archived || false,
             locked: thread.locked || false,
             messageCount: thread.messageCount,
-            ownerId: thread.ownerId
+            ownerId: thread.ownerId,
+            appliedTags: resolveAppliedTags(thread.appliedTags, forumChannel.availableTags)
           });
         }
       });
