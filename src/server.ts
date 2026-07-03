@@ -55,6 +55,8 @@ import {
 import { MCPTransport } from './transport.js';
 import { info, error } from './logger.js';
 
+const CLIENT_STATE_LOG_INTERVAL_MS = 5 * 60 * 1000; // was 10_000
+
 export class DiscordMCPServer {
   private server: Server;
   private toolContext: ReturnType<typeof createToolContext>;
@@ -337,7 +339,7 @@ export class DiscordMCPServer {
     // Setup periodic client state logging
     this.clientStatusInterval = setInterval(() => {
       this.logClientState("periodic check");
-    }, 10000);
+    }, CLIENT_STATE_LOG_INTERVAL_MS);
     
     await this.transport.start(this.server);
   }
@@ -348,7 +350,16 @@ export class DiscordMCPServer {
       clearInterval(this.clientStatusInterval);
       this.clientStatusInterval = null;
     }
-    
+
     await this.transport.stop();
+
+    // Tear down the discord.js client so its WebSocket and internal
+    // heartbeats stop pinning the event loop. Guarded so a stalled
+    // connection can't throw past shutdown.
+    try {
+      await this.client.destroy();
+    } catch (err) {
+      error('Error destroying Discord client: ' + String(err));
+    }
   }
 } 
