@@ -104,7 +104,7 @@ export {
 };
 
 // Export common types
-export { ToolResponse, ToolContext, ToolHandler };
+export type { ToolResponse, ToolContext, ToolHandler };
 
 // Create tool context
 export function createToolContext(client: Client): ToolContext {
