@@ -351,15 +351,22 @@ export class DiscordMCPServer {
       this.clientStatusInterval = null;
     }
 
-    await this.transport.stop();
-
-    // Tear down the discord.js client so its WebSocket and internal
-    // heartbeats stop pinning the event loop. Guarded so a stalled
-    // connection can't throw past shutdown.
+    let transportError: unknown;
     try {
-      await this.client.destroy();
+      await this.transport.stop();
     } catch (err) {
-      error('Error destroying Discord client: ' + String(err));
+      transportError = err;
+      error('Error stopping MCP transport: ' + String(err));
+    } finally {
+      // Always tear down Discord, even if transport cleanup fails.
+      try {
+        await this.client.destroy();
+      } catch (err) {
+        error('Error destroying Discord client: ' + String(err));
+        if (!transportError) transportError = err;
+      }
     }
+
+    if (transportError) throw transportError;
   }
 } 
