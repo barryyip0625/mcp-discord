@@ -103,14 +103,11 @@ const initializeTransport = () => {
     }
 };
 
-// Start auto-login process
-await autoLogin();
-
-// Create and start MCP server with selected transport
-const transport = initializeTransport();
-const mcpServer = new DiscordMCPServer(client, transport);
-
+// Keep transport construction, login, and server startup in one error boundary.
 try {
+    const transport = initializeTransport();
+    await autoLogin();
+    const mcpServer = new DiscordMCPServer(client, transport);
     await mcpServer.start();
     info('MCP server started successfully');
     
@@ -122,7 +119,7 @@ try {
     let heartbeat: NodeJS.Timeout | null = null;
     let shuttingDown = false;
 
-    const shutdown = async (reason: string) => {
+    const shutdown = async (reason: string, exitCode = 0) => {
         if (shuttingDown) return;            // idempotent
         shuttingDown = true;
         error(`Shutting down (${reason})...`);
@@ -130,7 +127,7 @@ try {
         // Bounded: if graceful close stalls (e.g. a hung Discord WS), force exit.
         const force = setTimeout(() => {
             error('Graceful shutdown timed out; forcing exit.');
-            process.exit(0);
+            process.exit(exitCode || 1);
         }, 3000);
         force.unref();                       // don't let the backstop itself pin the loop
 
@@ -139,8 +136,9 @@ try {
             await mcpServer.stop();          // clears health interval, closes transport, destroys client
         } catch (err) {
             error('Error during shutdown: ' + String(err));
+            exitCode ||= 1;
         }
-        process.exit(0);
+        process.exit(exitCode);
     };
 
     process.on('SIGINT', () => shutdown('SIGINT'));
@@ -149,6 +147,13 @@ try {
     // plain EOF surfaces as 'end'. Handle both; shutdown() is idempotent.
     process.stdin.on('close', () => shutdown('stdin close'));
     process.stdin.on('end', () => shutdown('stdin end'));
+
+    // An uncaught exception leaves process state undefined. Release resources
+    // and report a failure so a supervising process can restart the server.
+    process.on('uncaughtException', (err) => {
+        error('Uncaught exception: ' + String(err));
+        shutdown('uncaughtException', 1);
+    });
 
     // Keep the Node.js process running
     if (config.TRANSPORT.toLowerCase() === 'http') {
@@ -161,5 +166,10 @@ try {
     }
 } catch (err) {
     error('Failed to start MCP server: ' + String(err));
+    try {
+        await client.destroy();
+    } catch (destroyErr) {
+        error('Error destroying Discord client after startup failure: ' + String(destroyErr));
+    }
     process.exit(1);
 }
