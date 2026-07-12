@@ -20,7 +20,7 @@ const config = {
                 if (typeof configArg === 'string') {
                     try {
                         const parsedConfig = JSON.parse(configArg);
-                        return parsedConfig.DISCORD_TOKEN;
+                        return parsedConfig.DISCORD_TOKEN ?? parsedConfig.discordToken;
                     } catch (err) {
                         // If not valid JSON, try using the string directly
                         return configArg;
