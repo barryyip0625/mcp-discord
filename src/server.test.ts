@@ -64,6 +64,7 @@ const mockedTransport = {
 
 const mockedClient = {
   isReady: jest.fn(),
+  destroy: jest.fn().mockResolvedValue(undefined),
   user: null,
   token: null,
 };
@@ -639,7 +640,7 @@ describe('DiscordMCPServer', () => {
       await discordMCPServer.start();
 
       expect(mockTransport.start).toHaveBeenCalledWith(mockServer);
-      expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 10000);
+      expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 300000);
 
       // Clean up timer
       jest.useRealTimers();
@@ -665,6 +666,7 @@ describe('DiscordMCPServer', () => {
 
       expect(clearIntervalSpy).toHaveBeenCalled();
       expect(mockTransport.stop).toHaveBeenCalled();
+      expect(mockClient.destroy).toHaveBeenCalled();
       jest.useRealTimers();
     });
 
