@@ -676,5 +676,12 @@ describe('DiscordMCPServer', () => {
 
       expect(mockTransport.stop).toHaveBeenCalled();
     });
+
+    it('should destroy Discord even when transport shutdown rejects', async () => {
+      mockTransport.stop.mockRejectedValueOnce(new Error('transport close failed'));
+
+      await expect(discordMCPServer.stop()).rejects.toThrow('transport close failed');
+      expect(mockClient.destroy).toHaveBeenCalled();
+    });
   });
 });
