@@ -64,6 +64,11 @@ const client = new Client({
     ]
 });
 
+// EventEmitter treats an unhandled 'error' event as fatal. Log Discord gateway
+// and shard errors so transient network failures do not terminate the server.
+client.on('error', (err) => error('Discord client error: ' + String(err)));
+client.on('shardError', (err) => error('Discord shard error: ' + String(err)));
+
 // Save token to client for login handler
 if (config.DISCORD_TOKEN) {
     client.token = config.DISCORD_TOKEN;
