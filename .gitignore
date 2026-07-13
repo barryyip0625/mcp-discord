@@ -10,6 +10,8 @@ logs
 
 # Internal AI memory/log
 knowledge.md
+.cursor/
+memory-bank/
 
 # Environment Variables
 .env
