@@ -5,6 +5,11 @@
 
 A Discord MCP (Model Context Protocol) server that enables AI assistants to interact with the Discord platform.
 
+<p align="center">
+  <a href="https://discord.gg/stack-trace-cafe"><strong>☕ Stack Trace Café</strong></a><br/>
+  Discord server for developers — <a href="https://discord.gg/stack-trace-cafe">https://discord.gg/stack-trace-cafe</a>
+</p>
+
 <a href="https://glama.ai/mcp/servers/@barryyip0625/mcp-discord">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@barryyip0625/mcp-discord/badge" alt="MCP-Discord MCP server" />
 </a>
