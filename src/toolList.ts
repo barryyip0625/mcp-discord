@@ -86,7 +86,8 @@ export const toolList = [
         tags: {
           type: "array",
           items: { type: "string" }
-        }
+        },
+        pinned: { type: "boolean", description: "Pin the post to the top of the forum channel after creating it" }
       },
       required: ["forumChannelId", "title", "content"]
     }
@@ -325,7 +326,7 @@ export const toolList = [
   },
   {
     name: "discord_update_forum_post",
-    description: "Updates a forum post's title, applied tags, archived status, or locked status. Tags can be specified by name or ID.",
+    description: "Updates a forum post's title, applied tags, archived status, locked status, or pinned status. Tags can be specified by name or ID.",
     inputSchema: {
       type: "object",
       properties: {
@@ -333,7 +334,8 @@ export const toolList = [
         name: { type: "string", description: "New title for the forum post" },
         tags: { type: "array", items: { type: "string" }, description: "Tags to apply (by name or ID). Replaces all existing tags." },
         archived: { type: "boolean", description: "Whether to archive or unarchive the post" },
-        locked: { type: "boolean", description: "Whether to lock or unlock the post" }
+        locked: { type: "boolean", description: "Whether to lock or unlock the post" },
+        pinned: { type: "boolean", description: "Whether to pin or unpin the post at the top of its forum channel" }
       },
       required: ["threadId"]
     }
@@ -362,6 +364,44 @@ export const toolList = [
         reason: { type: "string" }
       },
       required: ["channelId", "messageId"]
+    }
+  },
+  {
+    name: "discord_pin_message",
+    description: "Pins a message to its channel. A channel can hold at most 50 pinned messages.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        channelId: { type: "string", description: "The ID of the channel containing the message" },
+        messageId: { type: "string", description: "The ID of the message to pin" },
+        reason: { type: "string", description: "Optional reason for audit logs" }
+      },
+      required: ["channelId", "messageId"]
+    }
+  },
+  {
+    name: "discord_unpin_message",
+    description: "Removes a message from its channel's pinned messages.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        channelId: { type: "string", description: "The ID of the channel containing the message" },
+        messageId: { type: "string", description: "The ID of the message to unpin" },
+        reason: { type: "string", description: "Optional reason for audit logs" }
+      },
+      required: ["channelId", "messageId"]
+    }
+  },
+  {
+    name: "discord_list_pinned_messages",
+    description: "Lists the pinned messages of a channel, newest pin first.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        channelId: { type: "string", description: "The ID of the channel to list pinned messages from" },
+        limit: { type: "number", description: "Maximum number of pinned messages to return (1-50, default 50)" }
+      },
+      required: ["channelId"]
     }
   },
   {

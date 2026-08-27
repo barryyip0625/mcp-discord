@@ -5,7 +5,8 @@ import {
   createForumPostHandler, 
   getForumPostHandler, 
   replyToForumHandler, 
-  deleteForumPostHandler 
+  deleteForumPostHandler,
+  updateForumPostHandler
 } from './forum.js';
 import { 
   GetForumChannelsSchema, 
@@ -103,7 +104,9 @@ const mockThread = {
     fetch: jest.fn()
   },
   send: jest.fn(),
-  delete: jest.fn()
+  delete: jest.fn(),
+  pin: jest.fn(),
+  unpin: jest.fn()
 };
 
 // Define the mock client managers
@@ -293,6 +296,132 @@ describe('createForumPostHandler', () => {
       appliedTags: ['tag1', 'tag2']
     });
     expect(result.content[0].text).toBe('Successfully created forum post "Test Post" with ID: thread123');
+  });
+
+  it('should pin the post when pinned is true', async () => {
+    mockClient.isReady.mockReturnValue(true);
+    mockClient.channels.fetch.mockResolvedValue(mockForumChannel);
+    mockForumChannel.threads.create.mockResolvedValue(mockThread);
+
+    const result = await createForumPostHandler(
+      {
+        forumChannelId: 'forum123',
+        title: 'Test Post',
+        content: 'Test content',
+        pinned: true
+      },
+      mockContext
+    );
+
+    expect(mockThread.pin).toHaveBeenCalled();
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0].text).toBe('Successfully created pinned forum post "Test Post" with ID: thread123');
+  });
+
+  it('should not pin the post when pinned is omitted', async () => {
+    mockClient.isReady.mockReturnValue(true);
+    mockClient.channels.fetch.mockResolvedValue(mockForumChannel);
+    mockForumChannel.threads.create.mockResolvedValue(mockThread);
+
+    await createForumPostHandler(
+      {
+        forumChannelId: 'forum123',
+        title: 'Test Post',
+        content: 'Test content'
+      },
+      mockContext
+    );
+
+    expect(mockThread.pin).not.toHaveBeenCalled();
+  });
+
+  it('should report the created post ID when only the pin fails', async () => {
+    mockClient.isReady.mockReturnValue(true);
+    mockClient.channels.fetch.mockResolvedValue(mockForumChannel);
+    mockForumChannel.threads.create.mockResolvedValue(mockThread);
+    mockThread.pin.mockRejectedValue(new Error('Missing Permissions'));
+
+    const result = await createForumPostHandler(
+      {
+        forumChannelId: 'forum123',
+        title: 'Test Post',
+        content: 'Test content',
+        pinned: true
+      },
+      mockContext
+    );
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('thread123');
+    expect(result.content[0].text).toContain('failed to pin it');
+  });
+});
+
+describe('updateForumPostHandler', () => {
+  let pinnableThread: any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockClient.isReady.mockReturnValue(true);
+
+    pinnableThread = {
+      id: 'thread123',
+      isThread: () => true,
+      parent: { type: ChannelType.GuildForum, availableTags: mockForumChannel.availableTags },
+      edit: jest.fn(),
+      pin: jest.fn(),
+      unpin: jest.fn()
+    };
+    mockClient.channels.fetch.mockResolvedValue(pinnableThread);
+  });
+
+  it('should pin a forum post without issuing a needless edit', async () => {
+    const result = await updateForumPostHandler({ threadId: 'thread123', pinned: true }, mockContext);
+
+    expect(pinnableThread.pin).toHaveBeenCalled();
+    expect(pinnableThread.edit).not.toHaveBeenCalled();
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0].text).toContain('pinned → true');
+  });
+
+  it('should unpin a forum post', async () => {
+    const result = await updateForumPostHandler({ threadId: 'thread123', pinned: false }, mockContext);
+
+    expect(pinnableThread.unpin).toHaveBeenCalled();
+    expect(result.content[0].text).toContain('pinned → false');
+  });
+
+  it('should apply other edits alongside the pin', async () => {
+    const result = await updateForumPostHandler(
+      { threadId: 'thread123', name: 'Renamed', locked: true, pinned: true },
+      mockContext
+    );
+
+    expect(pinnableThread.edit).toHaveBeenCalledWith({ name: 'Renamed', locked: true });
+    expect(pinnableThread.pin).toHaveBeenCalled();
+    expect(result.content[0].text).toContain('pinned → true');
+  });
+
+  it('should reject pinning a thread whose parent is not a forum channel', async () => {
+    pinnableThread.parent = { type: ChannelType.GuildText };
+
+    const result = await updateForumPostHandler({ threadId: 'thread123', pinned: true }, mockContext);
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('not a forum channel');
+    expect(pinnableThread.pin).not.toHaveBeenCalled();
+    expect(pinnableThread.edit).not.toHaveBeenCalled();
+  });
+
+  it('should return error if client is not ready', async () => {
+    mockClient.isReady.mockReturnValue(false);
+
+    const result = await updateForumPostHandler({ threadId: 'thread123', pinned: true }, mockContext);
+
+    expect(result).toEqual({
+      content: [{ type: "text", text: "Discord client not logged in." }],
+      isError: true
+    });
   });
 });
 

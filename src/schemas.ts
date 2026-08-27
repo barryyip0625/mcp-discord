@@ -24,7 +24,8 @@ export const CreateForumPostSchema = z.object({
     forumChannelId: z.string({ description: "The ID of the forum channel where the thread will be created." }),
     title: z.string({ description: "The title of the forum post (thread)." }),
     content: z.string({ description: "The body content of the forum post." }),
-    tags: z.array(z.string({ description: "A tag to attach to the forum post." })).optional()
+    tags: z.array(z.string({ description: "A tag to attach to the forum post." })).optional(),
+    pinned: z.boolean({ description: "If true, pin the post to the top of the forum channel after creating it." }).optional()
 }, {
     description: "Create a new forum post (thread) in a specified forum channel."
 });
@@ -177,7 +178,8 @@ export const UpdateForumPostSchema = z.object({
     name: z.string().optional(),
     tags: z.array(z.string()).optional(),
     archived: z.boolean().optional(),
-    locked: z.boolean().optional()
+    locked: z.boolean().optional(),
+    pinned: z.boolean().optional()
 });
 
 export const SetForumTagsSchema = z.object({
@@ -203,6 +205,29 @@ export const DeleteMessageSchema = z.object({
     reason: z.string({ description: "Optional reason for audit logs when deleting the message." }).optional()
 }, {
     description: "Delete a message by its ID in a specified channel."
+});
+
+export const PinMessageSchema = z.object({
+    channelId: z.string({ description: "The ID of the channel containing the message to pin." }),
+    messageId: z.string({ description: "The ID of the message to pin." }),
+    reason: z.string({ description: "Optional reason for audit logs when pinning the message." }).optional()
+}, {
+    description: "Pin a message to its channel. A channel can hold at most 50 pinned messages."
+});
+
+export const UnpinMessageSchema = z.object({
+    channelId: z.string({ description: "The ID of the channel containing the message to unpin." }),
+    messageId: z.string({ description: "The ID of the message to unpin." }),
+    reason: z.string({ description: "Optional reason for audit logs when unpinning the message." }).optional()
+}, {
+    description: "Remove a message from its channel's pinned messages."
+});
+
+export const ListPinnedMessagesSchema = z.object({
+    channelId: z.string({ description: "The ID of the channel to list pinned messages from." }),
+    limit: z.number({ description: "Maximum number of pinned messages to return (1-50, default 50)." }).min(1).max(50).optional().default(50)
+}, {
+    description: "List the pinned messages of a channel, newest pin first."
 });
 
 export const CreateWebhookSchema = z.object({

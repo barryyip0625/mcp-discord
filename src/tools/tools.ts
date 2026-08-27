@@ -40,6 +40,11 @@ import {
   deleteMessageHandler
 } from './reactions.js';
 import {
+  pinMessageHandler,
+  unpinMessageHandler,
+  listPinnedMessagesHandler
+} from './pins.js';
+import {
   createWebhookHandler,
   sendWebhookMessageHandler,
   editWebhookHandler,
@@ -81,6 +86,9 @@ export {
   removeReactionHandler,
   getReactionUsersHandler,
   deleteMessageHandler,
+  pinMessageHandler,
+  unpinMessageHandler,
+  listPinnedMessagesHandler,
   createWebhookHandler,
   sendWebhookMessageHandler,
   editWebhookHandler,
