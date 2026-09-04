@@ -31,6 +31,9 @@ import {
   removeReactionHandler,
   getReactionUsersHandler,
   deleteMessageHandler,
+  pinMessageHandler,
+  unpinMessageHandler,
+  listPinnedMessagesHandler,
   createWebhookHandler,
   sendWebhookMessageHandler,
   editWebhookHandler,
@@ -219,6 +222,21 @@ export class DiscordMCPServer {
           case "discord_delete_message":
             this.logClientState("before discord_delete_message handler");
             toolResponse = await deleteMessageHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_pin_message":
+            this.logClientState("before discord_pin_message handler");
+            toolResponse = await pinMessageHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_unpin_message":
+            this.logClientState("before discord_unpin_message handler");
+            toolResponse = await unpinMessageHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_list_pinned_messages":
+            this.logClientState("before discord_list_pinned_messages handler");
+            toolResponse = await listPinnedMessagesHandler(args, this.toolContext);
             return toolResponse;
 
           case "discord_create_webhook":

@@ -282,13 +282,13 @@ Important notes:
 ### Forum Functions
 
 - `discord_get_forum_channels`: Get a list of forum channels
-- `discord_create_forum_post`: Create a forum post
+- `discord_create_forum_post`: Create a forum post (optionally pinned to the top of the channel)
 - `discord_get_forum_post`: Get a forum post
 - `discord_list_forum_threads`: List active and archived threads in a forum channel
 - `discord_reply_to_forum`: Reply to a forum post
 - `discord_get_forum_tags`: Get all available tags for a forum channel
 - `discord_set_forum_tags`: Replace the available tags for a forum channel
-- `discord_update_forum_post`: Update a forum post's title, tags, archived state, or locked state
+- `discord_update_forum_post`: Update a forum post's title, tags, archived state, locked state, or pinned state
 - `discord_delete_forum_post`: Delete a forum post
 
 ### Messages and Reactions
@@ -300,6 +300,9 @@ Important notes:
 - `discord_add_multiple_reactions`: Add multiple reactions to a message
 - `discord_remove_reaction`: Remove a reaction from a message
 - `discord_delete_message`: Delete a specific message from a channel
+- `discord_pin_message`: Pin a message to its channel (max 50 pins per channel)
+- `discord_unpin_message`: Remove a message from its channel's pinned messages
+- `discord_list_pinned_messages`: List a channel's pinned messages, newest pin first
 
 ### Webhook Management
 

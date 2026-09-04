@@ -16,6 +16,11 @@ function resolveAppliedTags(
   });
 }
 
+// Only threads inside a forum or media channel can be pinned to the top of their parent.
+function isPinnableThreadParent(parentType: ChannelType | undefined): boolean {
+  return parentType === ChannelType.GuildForum || parentType === ChannelType.GuildMedia;
+}
+
 export const getForumChannelsHandler: ToolHandler = async (args, { client }) => {
   const { guildId } = GetForumChannelsSchema.parse(args);
   
@@ -63,7 +68,7 @@ export const getForumChannelsHandler: ToolHandler = async (args, { client }) => 
 };
 
 export const createForumPostHandler: ToolHandler = async (args, { client }) => {
-  const { forumChannelId, title, content, tags } = CreateForumPostSchema.parse(args);
+  const { forumChannelId, title, content, tags, pinned } = CreateForumPostSchema.parse(args);
   
   try {
     if (!client.isReady()) {
@@ -103,10 +108,26 @@ export const createForumPostHandler: ToolHandler = async (args, { client }) => {
       appliedTags: selectedTagIds.length > 0 ? selectedTagIds : undefined
     });
 
+    // Pinning is a separate API call, so report it separately: the post exists
+    // either way and the caller needs to know if only the pin failed.
+    if (pinned) {
+      try {
+        await thread.pin();
+      } catch (pinError) {
+        return {
+          content: [{
+            type: "text",
+            text: `Created forum post "${title}" with ID: ${thread.id}, but failed to pin it: ${String(pinError)}`
+          }],
+          isError: true
+        };
+      }
+    }
+
     return {
       content: [{ 
         type: "text", 
-        text: `Successfully created forum post "${title}" with ID: ${thread.id}` 
+        text: `Successfully created ${pinned ? 'pinned ' : ''}forum post "${title}" with ID: ${thread.id}` 
       }]
     };
   } catch (error) {
@@ -409,7 +430,7 @@ export const setForumTagsHandler: ToolHandler = async (args, { client }) => {
 };
 
 export const updateForumPostHandler: ToolHandler = async (args, { client }) => {
-  const { threadId, name, tags, archived, locked } = UpdateForumPostSchema.parse(args);
+  const { threadId, name, tags, archived, locked, pinned } = UpdateForumPostSchema.parse(args);
 
   try {
     if (!client.isReady()) {
@@ -463,13 +484,32 @@ export const updateForumPostHandler: ToolHandler = async (args, { client }) => {
       }
     }
 
-    const updated = await thread.edit(editOptions);
+    if (pinned !== undefined && !isPinnableThreadParent(thread.parent?.type)) {
+      return {
+        content: [{ type: "text", text: `Thread's parent channel is not a forum channel. Only forum posts can be pinned to the top of their channel; use discord_pin_message to pin a message instead.` }],
+        isError: true
+      };
+    }
+
+    // A pin-only update has nothing to PATCH, so skip the needless edit call.
+    if (Object.keys(editOptions).length > 0) {
+      await thread.edit(editOptions);
+    }
+
+    if (pinned !== undefined) {
+      if (pinned) {
+        await thread.pin();
+      } else {
+        await thread.unpin();
+      }
+    }
 
     const changes: string[] = [];
     if (name !== undefined) changes.push(`name → "${name}"`);
     if (tags !== undefined) changes.push(`tags → [${tags.join(', ')}]`);
     if (archived !== undefined) changes.push(`archived → ${archived}`);
     if (locked !== undefined) changes.push(`locked → ${locked}`);
+    if (pinned !== undefined) changes.push(`pinned → ${pinned}`);
 
     return {
       content: [{
