@@ -192,7 +192,6 @@ const config = {
 };
 
 const discord = createDiscordClient(config.DISCORD_TOKEN);
-const server = createMcpServer(discord);
 
 const app = express();
 app.use(express.json());
@@ -234,8 +233,12 @@ const mcpPostHandler = async (req: Request, res: Response) => {
                 }
             };
 
-            // Connect the transport to the MCP server before handling the request
-            await server.connect(transport);
+            // Connect the transport to a server instance of its own. The SDK's
+            // Protocol allows exactly one transport per server, so a shared
+            // instance would make every session after the first fail with
+            // "Already connected to a transport". The Discord client stays
+            // shared, so this still uses a single gateway connection.
+            await createMcpServer(discord).connect(transport);
 
             await transport.handleRequest(req, res, req.body);
             return;
@@ -339,7 +342,7 @@ if (config.TRANSPORT.toLowerCase() === 'http') {
 } else {
     // Stdio transport
     const transport = new StdioServerTransport();
-    await server.connect(transport);
+    await createMcpServer(discord).connect(transport);
     process.stderr.write('MCP Stdio Server started. Awaiting messages...\n');
 
 }
