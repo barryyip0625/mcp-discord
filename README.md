@@ -1,7 +1,7 @@
 # MCP-Discord
 
 [![MCP Toplist](https://mcptoplist.com/badge/smithery%2Fbarryyip0625%2Fmcp-discord.svg)](https://mcptoplist.com/server/smithery%2Fbarryyip0625%2Fmcp-discord)
-[![smithery badge](https://smithery.ai/badge/@barryyip0625/mcp-discord)](https://smithery.ai/server/@barryyip0625/mcp-discord) ![](https://badge.mcpx.dev?type=server 'MCP Server') [![Docker Hub](https://img.shields.io/docker/v/barryy625/mcp-discord?logo=docker&label=Docker%20Hub)](https://hub.docker.com/r/barryy625/mcp-discord)
+![](https://badge.mcpx.dev?type=server 'MCP Server') [![Docker Hub](https://img.shields.io/docker/v/barryy625/mcp-discord?logo=docker&label=Docker%20Hub)](https://hub.docker.com/r/barryy625/mcp-discord)
 
 A Discord MCP (Model Context Protocol) server that enables AI assistants to interact with the Discord platform.
 
