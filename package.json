@@ -61,6 +61,15 @@
     "zod": "^3.25.13"
   },
   "overrides": {
-    "undici": "6.27.0"
+    "undici": "6.28.1",
+    "fast-uri": "3.1.7",
+    "@hono/node-server": "1.19.17",
+    "hono": "4.12.34",
+    "qs": "6.16.0",
+    "ip-address": "10.7.0",
+    "browserslist": "4.28.9",
+    "js-yaml": "3.15.2",
+    "brace-expansion@1": "1.1.18",
+    "brace-expansion@2": "2.1.4"
   }
 }

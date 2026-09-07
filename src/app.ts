@@ -49,7 +49,7 @@ function createMcpServer(client: Client) {
         { name: 'discord_reply_to_forum', schema: schemas.ReplyToForumSchema, handler: handlers.replyToForumHandler },
         { name: 'discord_delete_forum_post', schema: schemas.DeleteForumPostSchema, handler: handlers.deleteForumPostHandler },
         { name: 'discord_search_messages', schema: schemas.SearchMessagesSchema, handler: handlers.searchMessagesHandler },
-        { name: 'discord_read_messages', schema: schemas.ReadMessagesSchema, handler: handlers.readMessagesHandler },
+        { name: 'discord_read_messages', schema: schemas.ReadMessagesBaseSchema, handler: handlers.readMessagesHandler },
         { name: 'discord_add_reaction', schema: schemas.AddReactionSchema, handler: handlers.addReactionHandler },
         { name: 'discord_add_multiple_reactions', schema: schemas.AddMultipleReactionsSchema, handler: handlers.addMultipleReactionsHandler },
         { name: 'discord_remove_reaction', schema: schemas.RemoveReactionSchema, handler: handlers.removeReactionHandler },
@@ -67,13 +67,20 @@ function createMcpServer(client: Client) {
         { name: 'discord_delete_category', schema: schemas.DeleteCategorySchema, handler: handlers.deleteCategoryHandler },
     ];
 
-    // Register each tool on the MCP server
+    // Register each tool on the MCP server. server.tool() expects a Zod object
+    // shape, not a full Zod schema — never pass a ZodEffects/raw schema here.
     for (const t of toolMap) {
         try {
+            const shape = t.schema?.shape;
+            if (t.schema && !shape) {
+                warning(server.server, `Skipping tool ${t.name}: schema is not a Zod object (missing .shape). Unwrap refinements before registration.`);
+                continue;
+            }
             server.tool(
                 t.name,
                 t.schema ? t.schema.description ?? '' : '',
-                t.schema ? t.schema.shape ?? t.schema : undefined, async (args: any) => {
+                shape,
+                async (args: any) => {
                     // Handlers follow the signature: (args, context) => Promise<ToolResponse>
                     return await t.handler(args, toolContext);
                 });

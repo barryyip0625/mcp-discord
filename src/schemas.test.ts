@@ -10,6 +10,7 @@ import {
     EditCategorySchema,
     DeleteCategorySchema,
     DeleteChannelSchema,
+    ReadMessagesBaseSchema,
     ReadMessagesSchema,
     GetServerInfoSchema,
     AddReactionSchema,
@@ -357,6 +358,46 @@ describe('Discord Schemas Validation Tests', () => {
         test('should reject without channelId', () => {
             const data = { limit: 25 };
             expect(() => ReadMessagesSchema.parse(data)).toThrow();
+        });
+
+        test('should reject more than one of before, after, or around', () => {
+            expect(() => ReadMessagesSchema.parse({
+                channelId: 'channel123',
+                before: '111',
+                after: '222'
+            })).toThrow(/Only one of 'before', 'after', or 'around'/);
+
+            expect(() => ReadMessagesSchema.parse({
+                channelId: 'channel123',
+                before: '111',
+                around: '333'
+            })).toThrow(/Only one of 'before', 'after', or 'around'/);
+
+            expect(() => ReadMessagesSchema.parse({
+                channelId: 'channel123',
+                after: '222',
+                around: '333'
+            })).toThrow(/Only one of 'before', 'after', or 'around'/);
+        });
+
+        test('should accept a single cursor field', () => {
+            expect(ReadMessagesSchema.parse({
+                channelId: 'channel123',
+                before: '111'
+            })).toEqual({ channelId: 'channel123', before: '111', limit: 50 });
+        });
+    });
+
+    describe('ReadMessagesBaseSchema', () => {
+        test('should expose a Zod object shape for MCP registration', () => {
+            expect(ReadMessagesBaseSchema.shape).toBeDefined();
+            expect(Object.keys(ReadMessagesBaseSchema.shape).sort()).toEqual(
+                ['after', 'around', 'before', 'channelId', 'limit']
+            );
+        });
+
+        test('should advertise a tool description', () => {
+            expect(ReadMessagesBaseSchema.description).toMatch(/Retrieves messages from a Discord text channel/);
         });
     });
 
