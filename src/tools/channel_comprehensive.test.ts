@@ -59,7 +59,7 @@ const createMockMessage = (id: string, content: string, authorId: string, author
     bot: false,
   },
   reference: null,
-  attachments: { size: 0 },
+  attachments: { size: 0, map: () => [] },
   embeds: [],
 });
 

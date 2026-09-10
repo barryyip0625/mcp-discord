@@ -74,6 +74,34 @@ describe('Discord Schemas Validation Tests', () => {
             const data = { channelId: 123, message: 'Hello' };
             expect(() => SendMessageSchema.parse(data)).toThrow();
         });
+
+        test('should accept optional embeds', () => {
+            const data = {
+                channelId: 'channel123',
+                message: '',
+                embeds: [{
+                    title: 'Issues created',
+                    description: '[#1 First issue](https://example.com/1)',
+                    url: 'https://example.com/1',
+                    color: 0x2ECC71,
+                    fields: [{ name: 'Status', value: 'To do', inline: true }],
+                    footer: { text: 'triage' },
+                    author: { name: 'bot', url: 'https://example.com' },
+                    timestamp: '2026-01-01T00:00:00.000Z'
+                }]
+            };
+            expect(SendMessageSchema.parse(data)).toEqual(data);
+        });
+
+        test('should reject an invalid embed url', () => {
+            const data = { channelId: 'channel123', message: 'x', embeds: [{ title: 'Bad', url: 'not a url' }] };
+            expect(() => SendMessageSchema.parse(data)).toThrow();
+        });
+
+        test('should reject more than 10 embeds', () => {
+            const embeds = Array.from({ length: 11 }, (_, i) => ({ title: `Embed ${i}` }));
+            expect(() => SendMessageSchema.parse({ channelId: 'channel123', message: 'x', embeds })).toThrow();
+        });
     });
 
     describe('GetForumChannelsSchema', () => {

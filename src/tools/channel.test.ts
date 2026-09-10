@@ -56,7 +56,7 @@ const mockMessage = {
     bot: false,
   },
   createdAt: new Date('2023-09-01T12:00:00Z'),
-  attachments: { size: 0 },
+  attachments: { size: 0, map: () => [] },
   embeds: [],
   reference: null,
 };
@@ -682,6 +682,98 @@ describe('Channel Handlers', () => {
       expect(result).toEqual({
         content: [{ type: "text", text: 'No messages found in channel' }]
       });
+    });
+
+    it('should return empty arrays and null webhook id for a plain message', async () => {
+      const plainMessage = {
+        ...mockMessage,
+        url: 'https://discord.com/channels/guildId/textChannelId/messageId',
+        webhookId: null,
+        reactions: { cache: { map: (fn: (value: any) => any) => [].map(fn) } }
+      };
+      const messagesCollection = new Map([[plainMessage.id, plainMessage]]);
+      Object.defineProperty(messagesCollection, 'map', {
+        value: (fn: (value: any) => any) => Array.from(messagesCollection.values()).map(fn),
+        writable: true,
+        configurable: true
+      });
+
+      mockContext.client.isReady.mockReturnValue(true);
+      mockContext.client.channels.fetch.mockResolvedValue(mockTextChannel);
+      mockTextChannel.messages.fetch.mockResolvedValue(messagesCollection);
+
+      const result = await readMessagesHandler({ channelId: 'textChannelId', limit: 10 }, mockContext);
+
+      const [message] = JSON.parse((result.content[0] as any).text).messages;
+      expect(message.webhookId).toBeNull();
+      expect(message.attachments).toEqual([]);
+      expect(message.embeds).toEqual([]);
+      expect(message.replyTo).toBeNull();
+    });
+
+    it('should return the message url, webhook id, embed content and attachments', async () => {
+      const richMessage = {
+        id: 'messageId',
+        content: '',
+        author: { id: 'webhookUserId', username: 'Suggestions', bot: true },
+        createdAt: new Date('2023-09-01T12:00:00Z'),
+        url: 'https://discord.com/channels/guildId/textChannelId/messageId',
+        webhookId: 'webhookId',
+        attachments: {
+          map: (fn: (value: any) => any) => [{
+            id: 'attachmentId', name: 'screenshot.png', url: 'https://cdn.example/screenshot.png',
+            contentType: 'image/png', size: 1234, width: 800, height: 600
+          }].map(fn)
+        },
+        embeds: [{
+          title: 'Suggestion',
+          description: 'Add a new puzzle\n\n**Player:** Steve',
+          url: null,
+          color: 0x2ECC71,
+          author: { name: 'Steve', url: null, iconURL: null },
+          fields: [{ name: 'Server', value: 'play', inline: true }],
+          footer: { text: 'LEPSU', iconURL: null },
+          image: { url: 'https://cdn.example/screenshot.png' },
+          thumbnail: null,
+          timestamp: null
+        }],
+        reference: null,
+        reactions: { cache: { map: (fn: (value: any) => any) => [].map(fn) } }
+      };
+      const messagesCollection = new Map([[richMessage.id, richMessage]]);
+      Object.defineProperty(messagesCollection, 'map', {
+        value: (fn: (value: any) => any) => Array.from(messagesCollection.values()).map(fn),
+        writable: true,
+        configurable: true
+      });
+
+      mockContext.client.isReady.mockReturnValue(true);
+      mockContext.client.channels.fetch.mockResolvedValue(mockTextChannel);
+      mockTextChannel.messages.fetch.mockResolvedValue(messagesCollection);
+
+      const result = await readMessagesHandler({ channelId: 'textChannelId', limit: 10 }, mockContext);
+
+      const payload = JSON.parse((result.content[0] as any).text);
+      expect(payload.messageCount).toBe(1);
+      const [message] = payload.messages;
+      expect(message.url).toBe('https://discord.com/channels/guildId/textChannelId/messageId');
+      expect(message.webhookId).toBe('webhookId');
+      expect(message.attachments).toEqual([{
+        id: 'attachmentId', name: 'screenshot.png', url: 'https://cdn.example/screenshot.png',
+        contentType: 'image/png', size: 1234, width: 800, height: 600
+      }]);
+      expect(message.embeds).toEqual([{
+        title: 'Suggestion',
+        description: 'Add a new puzzle\n\n**Player:** Steve',
+        url: null,
+        color: 0x2ECC71,
+        author: { name: 'Steve', url: null, iconURL: null },
+        fields: [{ name: 'Server', value: 'play', inline: true }],
+        footer: { text: 'LEPSU', iconURL: null },
+        image: 'https://cdn.example/screenshot.png',
+        thumbnail: null,
+        timestamp: null
+      }]);
     });
 
     it('should handle Discord errors', async () => {

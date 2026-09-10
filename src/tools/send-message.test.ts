@@ -7,6 +7,7 @@ import { Client, Channel, TextBasedChannel } from 'discord.js';
 const mockMessage = {
   id: 'message123',
   content: 'Test message',
+  url: 'https://discord.com/channels/guild123/channel123/message123',
 };
 
 const mockTextChannel: any = {
@@ -102,8 +103,62 @@ describe('sendMessageHandler', () => {
     // Assert
     expect(mockTextChannel.send).toHaveBeenCalledWith({ content: 'Hello World' });
     expect(result).toEqual({
-      content: [{ type: "text", text: "Message successfully sent to channel ID: channel123" }]
+      content: [{ type: "text", text: "Message successfully sent to channel ID: channel123 (message ID: message123, URL: https://discord.com/channels/guild123/channel123/message123)" }]
     });
+  });
+
+  it('should send message with embeds when embeds are provided', async () => {
+    // Arrange
+    mockClient.isReady.mockReturnValue(true);
+    mockClient.channels.fetch.mockResolvedValue(mockTextChannel);
+    const embeds = [{
+      title: 'Issues created',
+      description: '[#1 First issue](https://example.com/1)',
+      color: 0x2ECC71,
+      fields: [{ name: 'Status', value: 'To do', inline: true }],
+      footer: { text: 'triage' }
+    }];
+
+    // Act
+    const result = await sendMessageHandler(
+      { channelId: 'channel123', message: 'Issues created', embeds },
+      { client: mockClient }
+    );
+
+    // Assert
+    expect(mockTextChannel.send).toHaveBeenCalledWith({ content: 'Issues created', embeds });
+    expect(result).toEqual({
+      content: [{ type: "text", text: "Message successfully sent to channel ID: channel123 (message ID: message123, URL: https://discord.com/channels/guild123/channel123/message123)" }]
+    });
+  });
+
+  it('should send a reply with embeds', async () => {
+    mockClient.isReady.mockReturnValue(true);
+    mockClient.channels.fetch.mockResolvedValue(mockTextChannel);
+    const embeds = [{ title: 'Tracked', description: 'See #42' }];
+
+    await sendMessageHandler(
+      { channelId: 'channel123', message: 'Thanks!', replyToMessageId: 'message123', embeds },
+      { client: mockClient }
+    );
+
+    expect(mockTextChannel.send).toHaveBeenCalledWith({
+      content: 'Thanks!',
+      reply: { messageReference: 'message123' },
+      embeds
+    });
+  });
+
+  it('should not set embeds when an empty array is provided', async () => {
+    mockClient.isReady.mockReturnValue(true);
+    mockClient.channels.fetch.mockResolvedValue(mockTextChannel);
+
+    await sendMessageHandler(
+      { channelId: 'channel123', message: 'Hello World', embeds: [] },
+      { client: mockClient }
+    );
+
+    expect(mockTextChannel.send).toHaveBeenCalledWith({ content: 'Hello World' });
   });
 
   it('should send message as reply when replyToMessageId is provided and message exists', async () => {
@@ -127,7 +182,7 @@ describe('sendMessageHandler', () => {
       reply: { messageReference: 'message123' }
     });
     expect(result).toEqual({
-      content: [{ type: "text", text: "Message successfully sent to channel ID: channel123 as a reply to message ID: message123" }]
+      content: [{ type: "text", text: "Message successfully sent to channel ID: channel123 as a reply to message ID: message123 (message ID: message123, URL: https://discord.com/channels/guild123/channel123/message123)" }]
     });
   });
 

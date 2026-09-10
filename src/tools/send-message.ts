@@ -3,7 +3,7 @@ import { ToolHandler } from './types.js';
 import { handleDiscordError } from "../errorHandler.js";
 
 export const sendMessageHandler: ToolHandler = async (args, { client }) => {
-  const { channelId, message, replyToMessageId } = SendMessageSchema.parse(args);
+  const { channelId, message, replyToMessageId, embeds } = SendMessageSchema.parse(args);
   
   try {
     if (!client.isReady()) {
@@ -50,11 +50,18 @@ export const sendMessageHandler: ToolHandler = async (args, { client }) => {
       // Set the message content
       messageOptions.content = message;
       
-      await channel.send(messageOptions);
+      // Attach embeds (plain APIEmbed objects are accepted by discord.js as-is)
+      if (embeds && embeds.length > 0) {
+        messageOptions.embeds = embeds;
+      }
+
+      const sent = await channel.send(messageOptions);
       
-      const responseText = replyToMessageId 
+      const baseText = replyToMessageId
         ? `Message successfully sent to channel ID: ${channelId} as a reply to message ID: ${replyToMessageId}`
         : `Message successfully sent to channel ID: ${channelId}`;
+      // Expose the sent message so callers can link to it or edit it later
+      const responseText = `${baseText} (message ID: ${sent.id}, URL: ${sent.url})`;
       
       return {
         content: [{ type: "text", text: responseText }]

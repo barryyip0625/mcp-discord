@@ -6,12 +6,35 @@ export const DiscordLoginSchema = z.object({
     description: "Login to Discord using a bot token. If no token is provided, the bot will attempt to use the token from the environment variable DISCORD_TOKEN."
 });
 
+export const EmbedFieldSchema = z.object({
+    name: z.string({ description: "Field title (max 256 characters)." }).max(256),
+    value: z.string({ description: "Field text (max 1024 characters)." }).max(1024),
+    inline: z.boolean({ description: "Display the field inline with the previous one." }).optional()
+});
+
+export const EmbedSchema = z.object({
+    title: z.string({ description: "Embed title (max 256 characters)." }).max(256).optional(),
+    description: z.string({ description: "Embed body, supports Discord markdown (max 4096 characters)." }).max(4096).optional(),
+    url: z.string({ description: "URL the title links to." }).url().optional(),
+    color: z.number({ description: "Left border colour as an integer (e.g. 0x2ECC71 = 3066993)." }).int().min(0).max(0xFFFFFF).optional(),
+    fields: z.array(EmbedFieldSchema, { description: "Up to 25 fields." }).max(25).optional(),
+    footer: z.object({ text: z.string({ description: "Footer text (max 2048 characters)." }).max(2048) }).optional(),
+    author: z.object({
+        name: z.string({ description: "Author name (max 256 characters)." }).max(256),
+        url: z.string({ description: "URL the author name links to." }).url().optional()
+    }).optional(),
+    timestamp: z.string({ description: "ISO 8601 timestamp shown in the footer." }).optional()
+}, {
+    description: "A Discord embed: title, description, url, color, fields, footer, author and timestamp."
+});
+
 export const SendMessageSchema = z.object({
     channelId: z.string({ description: "The ID of the channel to send the message to." }),
-    message: z.string({ description: "The content of the message to send." }),
-    replyToMessageId: z.string({ description: "The ID of the message to reply to, if any." }).optional()
+    message: z.string({ description: "The content of the message to send (may be empty when embeds are supplied)." }),
+    replyToMessageId: z.string({ description: "The ID of the message to reply to, if any." }).optional(),
+    embeds: z.array(EmbedSchema, { description: "Up to 10 embeds to attach to the message." }).max(10).optional()
 }, {
-    description: "Send a message to a specified channel, optionally as a reply to another message."
+    description: "Send a message to a specified channel, optionally as a reply to another message and/or with embeds."
 });
 
 export const GetForumChannelsSchema = z.object({

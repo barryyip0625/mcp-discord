@@ -263,7 +263,7 @@ Important notes:
 
 - `discord_login`: Login to Discord using the configured token
 - `discord_list_servers`: List all Discord servers the bot is a member of
-- `discord_send`: Send a message to a specified channel
+- `discord_send`: Send a message to a specified channel (optionally as a reply, optionally with up to 10 `embeds` — `message` may then be empty); returns the sent message ID and URL
 - `discord_get_server_info`: Get Discord server information
 
 ### Channel Management
@@ -295,6 +295,10 @@ Important notes:
 
 - `discord_search_messages`: Search messages in a server
 - `discord_read_messages`: Read channel messages (supports `before`, `after`, `around` params — accepts snowflake IDs or ISO 8601 dates like `"2025-03-01T00:00:00Z"`)
+  - each message carries its `url` (jump link) and `webhookId` (set when it was posted through a webhook)
+  - `embeds`: the full content of each embed (`title`, `description`, `url`, `color`, `author`, `fields`, `footer`, `image`, `thumbnail`, `timestamp`) — the `author` / `footer` objects have the same shape as the `discord_send` embed input
+  - `attachments`: `id`, `name`, `url`, `contentType`, `size`, `width`, `height` for each attachment
+  - **breaking**: `embeds` and `attachments` were bare counts in earlier versions — use `.length` for the count
 - `discord_edit_message`: Edit a bot-authored message
 - `discord_add_reaction`: Add a reaction to a message
 - `discord_add_multiple_reactions`: Add multiple reactions to a message
