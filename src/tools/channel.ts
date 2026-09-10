@@ -343,8 +343,32 @@ export async function readMessagesHandler(
         bot: msg.author.bot
       },
       timestamp: msg.createdAt,
-      attachments: msg.attachments.size,
-      embeds: msg.embeds.length,
+      url: msg.url,
+      // Set when the message was posted through a webhook (its author is then the webhook user)
+      webhookId: msg.webhookId,
+      attachments: msg.attachments.map(a => ({
+        id: a.id,
+        name: a.name,
+        url: a.url,
+        contentType: a.contentType ?? null,
+        size: a.size,
+        width: a.width ?? null,
+        height: a.height ?? null
+      })),
+      // Full embed content (webhook/bot messages often carry their whole payload here).
+      // author/footer mirror the discord_send embed shape so an embed can be read and re-sent as-is.
+      embeds: msg.embeds.map(e => ({
+        title: e.title ?? null,
+        description: e.description ?? null,
+        url: e.url ?? null,
+        color: e.color ?? null,
+        author: e.author ? { name: e.author.name, url: e.author.url ?? null, iconURL: e.author.iconURL ?? null } : null,
+        fields: e.fields.map(f => ({ name: f.name, value: f.value, inline: f.inline ?? false })),
+        footer: e.footer ? { text: e.footer.text, iconURL: e.footer.iconURL ?? null } : null,
+        image: e.image?.url ?? null,
+        thumbnail: e.thumbnail?.url ?? null,
+        timestamp: e.timestamp ?? null
+      })),
       replyTo: msg.reference ? msg.reference.messageId : null,
       // Expose reactions populated by REST fetch (no Gateway intent required).
       // Each entry includes the unicode/custom emoji name+id, total count, and

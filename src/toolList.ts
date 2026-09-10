@@ -52,13 +52,56 @@ export const toolList = [
   },
   {
     name: "discord_send",
-    description: "Sends a message to a specified Discord text channel. Optionally reply to another message by providing its message ID.",
+    description: "Sends a message to a specified Discord text channel. Optionally reply to another message by providing its message ID, and/or attach up to 10 embeds. Returns the sent message ID and URL.",
     inputSchema: {
       type: "object",
       properties: {
         channelId: { type: "string" },
-        message: { type: "string" },
-        replyToMessageId: { type: "string" }
+        message: { type: "string", description: "The content of the message to send (may be empty when embeds are supplied)." },
+        replyToMessageId: { type: "string", description: "The ID of the message to reply to, if any." },
+        embeds: {
+          type: "array",
+          maxItems: 10,
+          description: "Up to 10 embeds to attach to the message.",
+          items: {
+            type: "object",
+            description: "A Discord embed: title, description, url, color, fields, footer, author and timestamp.",
+            properties: {
+              title: { type: "string", maxLength: 256, description: "Embed title (max 256 characters)." },
+              description: { type: "string", maxLength: 4096, description: "Embed body, supports Discord markdown (max 4096 characters)." },
+              url: { type: "string", format: "uri", description: "URL the title links to." },
+              color: { type: "integer", minimum: 0, maximum: 16777215, description: "Left border colour as an integer (e.g. 0x2ECC71 = 3066993)." },
+              fields: {
+                type: "array",
+                maxItems: 25,
+                description: "Up to 25 fields.",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string", maxLength: 256, description: "Field title (max 256 characters)." },
+                    value: { type: "string", maxLength: 1024, description: "Field text (max 1024 characters)." },
+                    inline: { type: "boolean", description: "Display the field inline with the previous one." }
+                  },
+                  required: ["name", "value"]
+                }
+              },
+              footer: {
+                type: "object",
+                properties: { text: { type: "string", maxLength: 2048, description: "Footer text (max 2048 characters)." } },
+                required: ["text"]
+              },
+              author: {
+                type: "object",
+                properties: {
+                  name: { type: "string", maxLength: 256, description: "Author name (max 256 characters)." },
+                  url: { type: "string", format: "uri", description: "URL the author name links to." }
+                },
+                required: ["name"]
+              },
+              timestamp: { type: "string", description: "ISO 8601 timestamp shown in the footer." }
+            }
+          }
+        }
       },
       required: ["channelId", "message"]
     }
@@ -186,7 +229,7 @@ export const toolList = [
   },
   {
     name: "discord_read_messages",
-    description: "Retrieves messages from a Discord text channel. Supports date-based filtering via before/after/around params (accepts snowflake IDs or ISO 8601 dates).",
+    description: "Retrieves messages from a Discord text channel. Supports date-based filtering via before/after/around params (accepts snowflake IDs or ISO 8601 dates). Each message includes its jump URL, webhook ID (when posted through a webhook), the full embed content (author/footer/image/thumbnail/fields) and the attachments (name, url, contentType, size, width, height).",
     inputSchema: {
       type: "object",
       properties: {
