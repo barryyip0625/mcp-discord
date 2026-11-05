@@ -87,10 +87,23 @@ MCP-Discord provides the following Discord-related functionalities:
 
 ### Installing via NPM
 
-You can use it with the following command:
+Set `DISCORD_TOKEN` in the environment, then start the server:
+
 ```bash
-npx mcp-discord --config ${DISCORD_TOKEN}
+export DISCORD_TOKEN=your_discord_bot_token
+npx mcp-discord
 ```
+
+On Windows PowerShell:
+
+```powershell
+$env:DISCORD_TOKEN="your_discord_bot_token"
+npx mcp-discord
+```
+
+The server reads that variable itself. An environment variable is still visible to some local readers; this form keeps the token out of the process argument list.
+
+`--config` still accepts a raw token or JSON with `DISCORD_TOKEN`. The value is part of the process arguments, so tools that can read the process list will show it. Prefer the environment variable above.
 
 For more details, you can check out the [NPM Package](https://www.npmjs.com/package/mcp-discord).
 
@@ -153,12 +166,13 @@ A Discord bot token is required for proper operation. The server supports two tr
 
 You can provide configuration in two ways:
 
-1. Environment variables:
+1. Environment variables (preferred). The token stays out of the process argument list:
 ```bash
-DISCORD_TOKEN=your_discord_bot_token
+export DISCORD_TOKEN=your_discord_bot_token
+node build/index.js
 ```
 
-2. Using command line arguments:
+2. Command line arguments. The value after `--config` is visible to process listings and monitoring tools that can read arguments:
 ```bash
 # For stdio transport (default)
 node build/index.js --config "your_discord_bot_token"
