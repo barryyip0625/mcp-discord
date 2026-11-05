@@ -225,6 +225,52 @@ describe('StreamableHttpTransport', () => {
       expect(mockRes.status).toHaveBeenCalledWith(500);
       expect(mockRes.json).toHaveBeenCalledWith({ error: 'Internal server error' });
     });
+
+    it('should use a fresh server and transport per request when given a server factory', async () => {
+      const transportCtor = require('@modelcontextprotocol/sdk/server/streamableHttp.js').StreamableHTTPServerTransport as jest.Mock;
+      const transports: any[] = [];
+      transportCtor.mockImplementation(() => {
+        const t = { handleRequest: jest.fn().mockResolvedValue(undefined), close: jest.fn().mockResolvedValue(undefined) };
+        transports.push(t);
+        return t;
+      });
+      const servers: any[] = [];
+      const createServer = jest.fn(() => {
+        const s = { connect: jest.fn().mockResolvedValue(undefined), close: jest.fn().mockResolvedValue(undefined) };
+        servers.push(s);
+        return s as unknown as Server;
+      });
+
+      await httpTransport.start(mockServer, createServer);
+
+      // Nothing is connected up front: the shared server never gets a transport.
+      expect(mockServer.connect).not.toHaveBeenCalled();
+      expect(transportCtor).not.toHaveBeenCalled();
+
+      const routeHandler = (mockApp.all as jest.Mock).mock.calls.find((call) => call[0] === '/mcp')[1];
+      const closeHandlers: Array<() => void> = [];
+      const makeRes = () => ({
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        headersSent: false,
+        on: jest.fn((event: string, cb: () => void) => { if (event === 'close') closeHandlers.push(cb); })
+      });
+
+      await routeHandler({ body: { id: 1 } }, makeRes());
+      await routeHandler({ body: { id: 2 } }, makeRes());
+
+      expect(createServer).toHaveBeenCalledTimes(2);
+      expect(transports).toHaveLength(2);
+      expect(servers[0].connect).toHaveBeenCalledWith(transports[0]);
+      expect(servers[1].connect).toHaveBeenCalledWith(transports[1]);
+      expect(transports[0].handleRequest).toHaveBeenCalledTimes(1);
+      expect(transports[1].handleRequest).toHaveBeenCalledTimes(1);
+
+      // Closing the response releases that request's server and transport.
+      closeHandlers.forEach(cb => cb());
+      expect(transports[0].close).toHaveBeenCalled();
+      expect(servers[1].close).toHaveBeenCalled();
+    });
   });
 
   describe('stop', () => {

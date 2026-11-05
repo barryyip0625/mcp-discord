@@ -34,7 +34,10 @@ import { Client, GatewayIntentBits } from "discord.js";
 import { info, error } from './logger.js';
 
 export interface MCPTransport {
-    start(server: Server): Promise<void>;
+    // createServer builds a fresh Server with the same handlers. Transports that
+    // serve several requests independently (stateless HTTP) need one Server per
+    // request, because the SDK's Protocol allows exactly one transport per server.
+    start(server: Server, createServer?: () => Server): Promise<void>;
     stop(): Promise<void>;
 }
 
@@ -69,7 +72,7 @@ export class StreamableHttpTransport implements MCPTransport {
         info(`Created HTTP transport with session ID: ${this.sessionId}`);
     }
 
-    async start(server: Server): Promise<void> {
+    async start(server: Server, createServer?: () => Server): Promise<void> {
         this.server = server;
         info('Starting HTTP transport with server: ' + String(!!this.server));
         
@@ -109,18 +112,40 @@ export class StreamableHttpTransport implements MCPTransport {
             }
         }
         
-        // Create transport
-        this.transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: undefined // stateless
-        });
-        
-        // Connect the transport
-        await this.server.connect(this.transport);
-        info('Transport connected');
+        if (createServer) {
+            // Stateless mode with one Server + transport per request. A single
+            // stateless StreamableHTTPServerTransport cannot be reused: since
+            // @modelcontextprotocol/sdk 1.26 it answers only the first request and
+            // every later one with 500. The Discord client stays shared, so this
+            // still uses a single gateway connection (same approach as app.ts).
+            info('HTTP transport: one server instance per request');
+        } else {
+            // Create transport
+            this.transport = new StreamableHTTPServerTransport({
+                sessionIdGenerator: undefined // stateless
+            });
+
+            // Connect the transport
+            await this.server.connect(this.transport);
+            info('Transport connected');
+        }
 
         // Setup /mcp endpoint to use transport.handleRequest()
         this.app.all('/mcp', async (req: Request, res: Response) => {
             try {
+                if (createServer) {
+                    const requestServer = createServer();
+                    const requestTransport = new StreamableHTTPServerTransport({
+                        sessionIdGenerator: undefined // stateless
+                    });
+                    res.on('close', () => {
+                        requestTransport.close().catch(() => {});
+                        requestServer.close().catch(() => {});
+                    });
+                    await requestServer.connect(requestTransport);
+                    await requestTransport.handleRequest(req, res, req.body);
+                    return;
+                }
                 await this.transport!.handleRequest(req, res, req.body);
             } catch (err) {
                 error('Error handling MCP request: ' + String(err));

@@ -69,7 +69,14 @@ export class DiscordMCPServer {
     private client: Client, 
     private transport: MCPTransport
   ) {
-    this.server = new Server(
+    this.toolContext = createToolContext(client);
+    this.server = this.createServer();
+  }
+
+  // Builds a Server with all handlers registered. The stateless HTTP transport
+  // calls this once per request; all instances share client and toolContext.
+  createServer(): Server {
+    const server = new Server(
       {
         name: "MCP-Discord",
         version: "1.0.0"
@@ -80,21 +87,20 @@ export class DiscordMCPServer {
         }
       }
     );
-
-    this.toolContext = createToolContext(client);
-    this.setupHandlers();
+    this.setupHandlers(server);
+    return server;
   }
 
-  private setupHandlers() {
+  private setupHandlers(server: Server) {
     // Set up the tool list
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: toolList
       };
     });
 
     // Handle tool execution requests
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
       try {
@@ -359,7 +365,7 @@ export class DiscordMCPServer {
       this.logClientState("periodic check");
     }, CLIENT_STATE_LOG_INTERVAL_MS);
     
-    await this.transport.start(this.server);
+    await this.transport.start(this.server, () => this.createServer());
   }
 
   async stop() {

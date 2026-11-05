@@ -639,7 +639,7 @@ describe('DiscordMCPServer', () => {
 
       await discordMCPServer.start();
 
-      expect(mockTransport.start).toHaveBeenCalledWith(mockServer);
+      expect(mockTransport.start).toHaveBeenCalledWith(mockServer, expect.any(Function));
       expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 300000);
 
       // Clean up timer
