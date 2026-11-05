@@ -591,7 +591,7 @@ describe('DiscordMCPServer', () => {
       it('should handle Zod validation errors', async () => {
         // Create a proper ZodError mock that will pass the instanceof check
         const mockZodError = new (require('zod').z.ZodError)([] as any);
-        mockZodError.errors = [
+        mockZodError.issues = [
           { path: ['param'], message: 'Invalid param' }
         ];
 
