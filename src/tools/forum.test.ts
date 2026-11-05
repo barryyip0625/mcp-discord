@@ -298,6 +298,47 @@ describe('createForumPostHandler', () => {
     expect(result.content[0].text).toBe('Successfully created forum post "Test Post" with ID: thread123');
   });
 
+  it('should accept tag IDs as well as names, like discord_update_forum_post', async () => {
+    mockClient.channels.fetch.mockResolvedValue(mockForumChannel);
+    mockForumChannel.threads.create.mockResolvedValue(mockThread);
+
+    await createForumPostHandler(
+      { forumChannelId: 'forum123', title: 'Test Post', content: 'Test content', tags: ['help', 'tag2'] },
+      mockContext
+    );
+
+    expect(mockForumChannel.threads.create).toHaveBeenCalledWith(
+      expect.objectContaining({ appliedTags: ['tag1', 'tag2'] })
+    );
+  });
+
+  it('should send each tag once, even when the caller repeats it by name or by ID', async () => {
+    mockClient.channels.fetch.mockResolvedValue(mockForumChannel);
+    mockForumChannel.threads.create.mockResolvedValue(mockThread);
+
+    await createForumPostHandler(
+      { forumChannelId: 'forum123', title: 'Test Post', content: 'Test content', tags: ['help', 'tag1', 'help'] },
+      mockContext
+    );
+
+    expect(mockForumChannel.threads.create).toHaveBeenCalledWith(
+      expect.objectContaining({ appliedTags: ['tag1'] })
+    );
+  });
+
+  it('should refuse an unknown tag before creating the post, instead of dropping it silently', async () => {
+    mockClient.channels.fetch.mockResolvedValue(mockForumChannel);
+
+    const result = await createForumPostHandler(
+      { forumChannelId: 'forum123', title: 'Test Post', content: 'Test content', tags: ['help', 'Help!'] },
+      mockContext
+    );
+
+    expect(mockForumChannel.threads.create).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toBe('Unknown tag(s): Help!. Available tags: help, discussion');
+  });
+
   it('should pin the post when pinned is true', async () => {
     mockClient.isReady.mockReturnValue(true);
     mockClient.channels.fetch.mockResolvedValue(mockForumChannel);

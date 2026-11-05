@@ -90,13 +90,24 @@ export const createForumPostHandler: ToolHandler = async (args, { client }) => {
     
     // Get available tags in the forum
     const availableTags = forumChannel.availableTags;
-    let selectedTagIds: string[] = [];
-    
-    // If tags are provided, find their IDs
-    if (tags && tags.length > 0) {
-      selectedTagIds = availableTags
-        .filter(tag => tags.includes(tag.name))
-        .map(tag => tag.id);
+    const selectedTagIds: string[] = [];
+    const unknownTags: string[] = [];
+
+    // Resolve like discord_update_forum_post, and refuse an unknown tag before the post exists.
+    for (const tagInput of tags ?? []) {
+      const tag = availableTags.find(t => t.name === tagInput) ?? availableTags.find(t => t.id === tagInput);
+      if (!tag) {
+        unknownTags.push(tagInput);
+      } else if (!selectedTagIds.includes(tag.id)) {
+        selectedTagIds.push(tag.id);
+      }
+    }
+    if (unknownTags.length > 0) {
+      const validNames = availableTags.map(t => t.name).join(', ');
+      return {
+        content: [{ type: "text", text: `Unknown tag(s): ${unknownTags.join(', ')}. Available tags: ${validNames}` }],
+        isError: true
+      };
     }
 
     // Create the forum post
