@@ -50,11 +50,13 @@ export const sendMessageHandler: ToolHandler = async (args, { client }) => {
       // Set the message content
       messageOptions.content = message;
       
-      await channel.send(messageOptions);
-      
-      const responseText = replyToMessageId 
-        ? `Message successfully sent to channel ID: ${channelId} as a reply to message ID: ${replyToMessageId}`
-        : `Message successfully sent to channel ID: ${channelId}`;
+      const sent = await channel.send(messageOptions);
+      // The new message's ID lets callers edit, pin or delete it later.
+      const idSuffix = sent?.id ? ` (message ID: ${sent.id})` : "";
+
+      const responseText = replyToMessageId
+        ? `Message successfully sent to channel ID: ${channelId} as a reply to message ID: ${replyToMessageId}${idSuffix}`
+        : `Message successfully sent to channel ID: ${channelId}${idSuffix}`;
       
       return {
         content: [{ type: "text", text: responseText }]
