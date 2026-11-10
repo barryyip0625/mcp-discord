@@ -102,7 +102,7 @@ describe('sendMessageHandler', () => {
     // Assert
     expect(mockTextChannel.send).toHaveBeenCalledWith({ content: 'Hello World' });
     expect(result).toEqual({
-      content: [{ type: "text", text: "Message successfully sent to channel ID: channel123" }]
+      content: [{ type: "text", text: "Message successfully sent to channel ID: channel123 (message ID: message123)" }]
     });
   });
 
@@ -127,7 +127,7 @@ describe('sendMessageHandler', () => {
       reply: { messageReference: 'message123' }
     });
     expect(result).toEqual({
-      content: [{ type: "text", text: "Message successfully sent to channel ID: channel123 as a reply to message ID: message123" }]
+      content: [{ type: "text", text: "Message successfully sent to channel ID: channel123 as a reply to message ID: message123 (message ID: message123)" }]
     });
   });
 

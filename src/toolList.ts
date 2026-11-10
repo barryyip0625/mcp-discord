@@ -598,6 +598,74 @@ export const toolList = [
     }
   },
   {
+    name: "discord_search_members",
+    description: "Search server members by the start of their username or nickname (prefix match, case-insensitive). Use it to find a member's user ID.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string", description: "The ID of the server (guild) to search in." },
+        query: { type: "string", description: "Start of a username or nickname." },
+        limit: { type: "number", description: "Maximum number of members to return (default 10, max 1000)", minimum: 1, maximum: 1000, default: 10 }
+      },
+      required: ["guildId", "query"]
+    }
+  },
+  {
+    name: "discord_send_dm",
+    description: "Send a direct message to a member of a server the bot is in. Refused if the user is not a member of that server or a safety limit applies; fails if the user does not accept DMs from server members.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string", description: "The server (guild) the recipient must be a member of." },
+        userId: { type: "string", description: "The ID of the user to send the direct message to." },
+        message: { type: "string", description: "The content of the direct message (max 2000 characters).", maxLength: 2000 }
+      },
+      required: ["guildId", "userId", "message"]
+    }
+  },
+  {
+    name: "discord_create_scheduled_event",
+    description: "Create a scheduled event in a server. voice = in a voice channel (needs channelId); external = elsewhere (needs location and endTime).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string", description: "The ID of the server (guild) to create the event in." },
+        name: { type: "string", description: "Name of the event (max 100 characters).", maxLength: 100 },
+        startTime: { type: "string", description: "Start time as ISO 8601 with offset, e.g. 2026-11-20T18:00:00+01:00." },
+        endTime: { type: "string", description: "End time as ISO 8601 with offset. Required for external events." },
+        description: { type: "string", description: "Description of the event (max 1000 characters).", maxLength: 1000 },
+        entityType: { type: "string", enum: ["voice", "external"], description: "voice = in a voice channel of the server, external = somewhere else." },
+        channelId: { type: "string", description: "Voice channel ID. Required for voice events." },
+        location: { type: "string", description: "Location or link (max 100 characters). Required for external events.", maxLength: 100 },
+        reason: { type: "string", description: "Optional reason for audit logs." }
+      },
+      required: ["guildId", "name", "startTime", "entityType"]
+    }
+  },
+  {
+    name: "discord_list_scheduled_events",
+    description: "List the scheduled events of a server with start, end, status, location and number of interested members.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string", description: "The ID of the server (guild) to list events for." }
+      },
+      required: ["guildId"]
+    }
+  },
+  {
+    name: "discord_delete_scheduled_event",
+    description: "Delete a scheduled event.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        guildId: { type: "string", description: "The ID of the server (guild) the event belongs to." },
+        eventId: { type: "string", description: "The ID of the scheduled event to delete." }
+      },
+      required: ["guildId", "eventId"]
+    }
+  },
+  {
     name: "discord_get_member",
     description: "Gets detailed information about a specific member in a Discord server",
     inputSchema: {
