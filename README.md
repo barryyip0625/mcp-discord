@@ -127,11 +127,11 @@ Docker uses the streamable HTTP server by default via `build/app.js`.
 # Pull the latest image
 docker pull barryy625/mcp-discord:latest
 
-# Run HTTP server on port 8080
-docker run -e DISCORD_TOKEN=your_discord_bot_token -p 8080:8080 barryy625/mcp-discord:latest
+# Run HTTP server on the host loopback only (requires MCP_AUTH_TOKEN)
+docker run -e DISCORD_TOKEN=your_discord_bot_token -e MCP_AUTH_TOKEN=your_mcp_auth_token -p 127.0.0.1:8080:8080 barryy625/mcp-discord:latest
 
 # Override the listening port if needed
-docker run -e DISCORD_TOKEN=your_discord_bot_token -p 3000:3000 barryy625/mcp-discord:latest --transport http --port 3000
+docker run -e DISCORD_TOKEN=your_discord_bot_token -e MCP_AUTH_TOKEN=your_mcp_auth_token -p 127.0.0.1:3000:3000 barryy625/mcp-discord:latest --transport http --port 3000
 ```
 
 **Available Tags:**
@@ -164,16 +164,25 @@ A Discord bot token is required for proper operation. The server supports two tr
 2. **streamable HTTP**
    - HTTP-based transport for more advanced scenarios
    - Supports stateless operation
-   - Configurable port number
+   - Configurable port (`--port`) and bind address (`--host` or `MCP_HTTP_HOST`, default `127.0.0.1`)
+   - Requires `MCP_AUTH_TOKEN`; every `/mcp` request must send `Authorization: Bearer <token>`
 
 ### Configuration Options
 
 You can provide configuration in two ways:
 
-1. Environment variables (preferred). The token stays out of the process argument list:
+1. Environment variables (preferred). Secrets stay out of the process argument list:
 ```bash
 export DISCORD_TOKEN=your_discord_bot_token
 node build/index.js
+```
+
+HTTP mode also requires `MCP_AUTH_TOKEN`. Bind a wider interface only when you intend to (for example Docker sets `MCP_HTTP_HOST=0.0.0.0` inside the container):
+```bash
+export DISCORD_TOKEN=your_discord_bot_token
+export MCP_AUTH_TOKEN=your_mcp_auth_token
+# optional: export MCP_HTTP_HOST=0.0.0.0
+node build/app.js --transport http --port 3000
 ```
 
 2. Command line arguments. The value after `--config` is visible to process listings and monitoring tools that can read arguments:
@@ -181,8 +190,8 @@ node build/index.js
 # For stdio transport (default)
 node build/index.js --config "your_discord_bot_token"
 
-# For streamable HTTP transport
-node build/app.js --transport http --port 3000 --config "your_discord_bot_token"
+# For streamable HTTP transport (still set MCP_AUTH_TOKEN in the environment)
+MCP_AUTH_TOKEN=your_mcp_auth_token node build/app.js --transport http --port 3000 --config "your_discord_bot_token"
 ```
 
 ## Usage with Claude/Cursor
@@ -236,20 +245,23 @@ Use `build/app.js` when you want to run mcp-discord as an HTTP MCP server.
 #### Run with Node.js
 
 ```bash
-DISCORD_TOKEN=your_discord_bot_token node build/app.js --transport http --port 3000
+DISCORD_TOKEN=your_discord_bot_token MCP_AUTH_TOKEN=your_mcp_auth_token node build/app.js --transport http --port 3000
 ```
 
 On Windows PowerShell:
 
 ```powershell
 $env:DISCORD_TOKEN="your_discord_bot_token"
+$env:MCP_AUTH_TOKEN="your_mcp_auth_token"
 node build/app.js --transport http --port 3000
 ```
+
+MCP clients must send `Authorization: Bearer your_mcp_auth_token` on every request to `/mcp`.
 
 #### Run with Docker
 
 ```bash
-docker run -e DISCORD_TOKEN=your_discord_bot_token -p 3000:3000 barryy625/mcp-discord:latest --transport http --port 3000
+docker run -e DISCORD_TOKEN=your_discord_bot_token -e MCP_AUTH_TOKEN=your_mcp_auth_token -p 127.0.0.1:3000:3000 barryy625/mcp-discord:latest --transport http --port 3000
 ```
 
 Once started, the MCP HTTP endpoint is:
@@ -273,7 +285,8 @@ Important notes:
 - `build/app.js` starts an HTTP server. It does not speak stdio.
 - `build/index.js` is the correct entrypoint for command-based stdio MCP clients.
 - For hosted HTTP usage, configure your MCP client to connect to the HTTP endpoint URL provided by your deployment.
-- The exact HTTP-client configuration format depends on the MCP client you use.
+- HTTP mode requires `MCP_AUTH_TOKEN` and listens on `127.0.0.1` unless you set `--host` / `MCP_HTTP_HOST`.
+- The exact HTTP-client configuration format depends on the MCP client you use. Include an `Authorization: Bearer` header when the server requires it.
 
 ## Tools Documentation
 

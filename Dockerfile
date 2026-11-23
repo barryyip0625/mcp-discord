@@ -19,6 +19,11 @@ RUN npm run build
 # Expose HTTP port
 EXPOSE 8080
 
+# Containers must listen on all interfaces so Docker port publishing works.
+# Publish only to the host loopback in run examples (127.0.0.1:8080:8080).
+# HTTP mode also requires MCP_AUTH_TOKEN at runtime.
+ENV MCP_HTTP_HOST=0.0.0.0
+
 # entrypoint to run the MCP server
 ENTRYPOINT ["node", "build/app.js"]
 # Default command to run the MCP server with HTTP transport

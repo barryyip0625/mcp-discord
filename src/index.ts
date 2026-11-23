@@ -4,6 +4,7 @@ import { config as dotenvConfig } from 'dotenv';
 import { DiscordMCPServer } from './server.js';
 import { StdioTransport, StreamableHttpTransport } from './transport.js';
 import { info, error } from './logger.js';
+import { resolveHttpHost, requireHttpAuthToken } from './httpSecurity.js';
 
 // Load environment variables from .env file if exists
 dotenvConfig();
@@ -51,7 +52,8 @@ const config = {
         }
         // Default port for MCP
         return 8080;
-    })()
+    })(),
+    HTTP_HOST: resolveHttpHost()
 };
 
 // Create Discord client
@@ -96,9 +98,17 @@ const autoLogin = async () => {
 // Initialize transport based on configuration
 const initializeTransport = () => {
     switch (config.TRANSPORT.toLowerCase()) {
-        case 'http':
-            info(`Initializing HTTP transport on 0.0.0.0:${config.HTTP_PORT}`);
-            return new StreamableHttpTransport(config.HTTP_PORT);
+        case 'http': {
+            let authToken: string;
+            try {
+                authToken = requireHttpAuthToken();
+            } catch (err) {
+                error(String(err instanceof Error ? err.message : err));
+                process.exit(1);
+            }
+            info(`Initializing HTTP transport on ${config.HTTP_HOST}:${config.HTTP_PORT}`);
+            return new StreamableHttpTransport(config.HTTP_PORT, config.HTTP_HOST, authToken);
+        }
         case 'stdio':
             info('Initializing stdio transport');
             return new StdioTransport();

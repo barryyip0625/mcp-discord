@@ -32,6 +32,7 @@ import {
 } from './tools/tools.js';
 import { Client, GatewayIntentBits } from "discord.js";
 import { info, error } from './logger.js';
+import { DEFAULT_HTTP_HOST, createBearerAuthMiddleware } from './httpSecurity.js';
 
 export interface MCPTransport {
     // createServer builds a fresh Server with the same handlers. Transports that
@@ -65,7 +66,11 @@ export class StreamableHttpTransport implements MCPTransport {
     private toolContext: ReturnType<typeof createToolContext> | null = null;
     private sessionId: string = '';
 
-    constructor(private port: number = 8080) {
+    constructor(
+        private port: number = 8080,
+        private host: string = DEFAULT_HTTP_HOST,
+        private authToken?: string
+    ) {
         this.app = express();
         this.app.use(express.json());
         this.sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
@@ -73,6 +78,10 @@ export class StreamableHttpTransport implements MCPTransport {
     }
 
     async start(server: Server, createServer?: () => Server): Promise<void> {
+        if (!this.authToken) {
+            throw new Error("HTTP mode requires the MCP_AUTH_TOKEN environment variable");
+        }
+        this.app.use(createBearerAuthMiddleware(this.authToken));
         this.server = server;
         info('Starting HTTP transport with server: ' + String(!!this.server));
         
@@ -156,8 +165,8 @@ export class StreamableHttpTransport implements MCPTransport {
         });
 
         return new Promise((resolve) => {
-            this.httpServer = this.app.listen(this.port, '0.0.0.0', () => {
-                info(`MCP Server listening on 0.0.0.0:${this.port}`);
+            this.httpServer = this.app.listen(this.port, this.host, () => {
+                info(`MCP Server listening on ${this.host}:${this.port}`);
                 resolve();
             });
         });

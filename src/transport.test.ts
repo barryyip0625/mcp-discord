@@ -141,7 +141,7 @@ describe('StreamableHttpTransport', () => {
     
     (mockExpress as jest.Mock).mockReturnValue(mockApp);
 
-    httpTransport = new StreamableHttpTransport(3000);
+    httpTransport = new StreamableHttpTransport(3000, '127.0.0.1', 'test-token');
     mockServer = {
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined)
@@ -161,9 +161,30 @@ describe('StreamableHttpTransport', () => {
     });
 
     it('should initialize with provided port', () => {
-      const customPortTransport = new StreamableHttpTransport(9999);
+      const customPortTransport = new StreamableHttpTransport(9999, '127.0.0.1', 'test-token');
       // Verify the transport was created properly
       expect(customPortTransport).toBeInstanceOf(StreamableHttpTransport);
+    });
+  });
+
+  describe('auth', () => {
+    it('should refuse to start without an auth token', async () => {
+      const unauthenticated = new StreamableHttpTransport(3000);
+      await expect(unauthenticated.start(mockServer)).rejects.toThrow(/MCP_AUTH_TOKEN/);
+      expect(mockApp.listen).not.toHaveBeenCalled();
+    });
+
+    it('should listen on an explicit host when given one', async () => {
+      const mockTransport = {
+        handleRequest: jest.fn(),
+        close: jest.fn().mockResolvedValue(undefined)
+      };
+      (require('@modelcontextprotocol/sdk/server/streamableHttp.js').StreamableHTTPServerTransport as jest.Mock)
+        .mockReturnValue(mockTransport);
+
+      const bound = new StreamableHttpTransport(3000, '0.0.0.0', 'test-token');
+      await bound.start(mockServer);
+      expect(mockApp.listen).toHaveBeenCalledWith(3000, '0.0.0.0', expect.any(Function));
     });
   });
 
@@ -180,7 +201,7 @@ describe('StreamableHttpTransport', () => {
 
       expect(require('@modelcontextprotocol/sdk/server/streamableHttp.js').StreamableHTTPServerTransport).toHaveBeenCalledTimes(1);
       expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
-      expect(mockApp.listen).toHaveBeenCalledWith(3000, '0.0.0.0', expect.any(Function));
+      expect(mockApp.listen).toHaveBeenCalledWith(3000, '127.0.0.1', expect.any(Function));
     });
 
     it('should set up /mcp endpoint correctly', async () => {

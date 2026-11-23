@@ -11,6 +11,7 @@ import { info, Level, setLevel, warning } from './notifications.js';
 import * as schemas from './schemas.js';
 import * as handlers from './tools/tools.js';
 import { createToolContext } from './tools/tools.js';
+import { createBearerAuthMiddleware, requireHttpAuthToken, resolveHttpHost } from './httpSecurity.js';
 
 // Load environment variables from .env file if exists
 dotenvConfig();
@@ -198,7 +199,8 @@ const config = {
         }
         // Default port for MCP
         return 8080;
-    })()
+    })(),
+    HTTP_HOST: resolveHttpHost()
 };
 
 const discord = createDiscordClient(config.DISCORD_TOKEN);
@@ -318,18 +320,28 @@ const mcpDeleteHandler = async (req: Request, res: Response) => {
 
 // Handle both Stdio and HTTP transports based on configuration
 if (config.TRANSPORT.toLowerCase() === 'http') {
+    let authToken: string;
+    try {
+        authToken = requireHttpAuthToken();
+    } catch (err) {
+        process.stderr.write(String(err instanceof Error ? err.message : err) + '\n');
+        process.exit(1);
+    }
+    app.use(createBearerAuthMiddleware(authToken));
+
     // HTTP transport endpoints
     app.post('/mcp', mcpPostHandler);
     app.get('/mcp', mcpGetHandler);
     app.delete('/mcp', mcpDeleteHandler);
 
     const port = config.HTTP_PORT || 8080;
-    app.listen(port, error => {
+    const host = config.HTTP_HOST;
+    app.listen(port, host, error => {
         if (error) {
             process.stderr.write('Error starting MCP HTTP server: ' + String(error) + '\n');
             process.exit(1);
         }
-        process.stderr.write(`MCP Streamable HTTP Server listening on port ${port}\n`);
+        process.stderr.write(`MCP Streamable HTTP Server listening on ${host}:${port}\n`);
     });
 
     // Handle server shutdown
