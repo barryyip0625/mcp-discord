@@ -132,6 +132,7 @@ describe('toolList', () => {
       expect(discordSendTool.inputSchema.required).toContain('channelId');
       expect(discordSendTool.inputSchema.required).toContain('message');
       expect(discordSendTool.inputSchema.properties).toHaveProperty('replyToMessageId');
+      expect(discordSendTool.inputSchema.properties).toHaveProperty('embeds');
     }
   });
 

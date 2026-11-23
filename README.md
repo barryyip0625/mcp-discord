@@ -17,10 +17,13 @@ MCP-Discord provides the following Discord-related functionalities:
 - List servers the bot is a member of
 - Get server information
 - List members and inspect member details
+- Search members by username or nickname prefix
+- Send direct messages to server members
 - List, create, edit, delete, assign, and remove roles
 - Search messages in a server
-- Read, edit, and delete channel messages
-- Send messages to specified channels
+- Read, edit, and delete channel messages (read output includes embed and attachment content)
+- Send messages to specified channels, optionally with embeds
+- Create, list, and delete scheduled events
 - Retrieve forum channel lists
 - Create, update, delete, and reply to forum posts
 - List forum threads and manage forum tags
@@ -42,6 +45,7 @@ MCP-Discord provides the following Discord-related functionalities:
   - [Webhook Management](#webhook-management)
   - [Role Management](#role-management)
   - [Member Management](#member-management)
+  - [Scheduled Events](#scheduled-events)
 - [Development](#development)
 - [License](#license)
 
@@ -277,7 +281,7 @@ Important notes:
 
 - `discord_login`: Login to Discord using the configured token
 - `discord_list_servers`: List all Discord servers the bot is a member of
-- `discord_send`: Send a message to a specified channel
+- `discord_send`: Send a message to a specified channel (optionally as a reply, optionally with up to 10 `embeds` — `message` may then be empty); returns the sent message ID and URL
 - `discord_get_server_info`: Get Discord server information
 
 ### Channel Management
@@ -309,6 +313,10 @@ Important notes:
 
 - `discord_search_messages`: Search messages in a server
 - `discord_read_messages`: Read channel messages (supports `before`, `after`, `around` params — accepts snowflake IDs or ISO 8601 dates like `"2025-03-01T00:00:00Z"`)
+  - each message carries its `url` (jump link) and `webhookId` (set when it was posted through a webhook)
+  - `embeds`: the full content of each embed (`title`, `description`, `url`, `color`, `author`, `fields`, `footer`, `image`, `thumbnail`, `timestamp`) — the `author` / `footer` objects have the same shape as the `discord_send` embed input
+  - `attachments`: `id`, `name`, `url`, `contentType`, `size`, `width`, `height` for each attachment
+  - **breaking**: `embeds` and `attachments` were bare counts in earlier versions — use `.length` for the count
 - `discord_edit_message`: Edit a bot-authored message
 - `discord_add_reaction`: Add a reaction to a message
 - `discord_add_multiple_reactions`: Add multiple reactions to a message
@@ -338,6 +346,14 @@ Important notes:
 
 - `discord_list_members`: List members in a server with roles
 - `discord_get_member`: Get detailed information about a specific member
+- `discord_search_members`: Search members by the start of their username or nickname
+- `discord_send_dm`: Send a direct message to a member of a server the bot is in (refused for non-members, bots, or when a safety limit applies)
+
+### Scheduled Events
+
+- `discord_create_scheduled_event`: Create a guild-only scheduled event (`voice` needs `channelId`; `external` needs `location` and `endTime`)
+- `discord_list_scheduled_events`: List a server's scheduled events
+- `discord_delete_scheduled_event`: Delete a scheduled event
 
 ## Development
 
