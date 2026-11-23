@@ -58,8 +58,15 @@ import {
   assignRoleHandler,
   removeRoleHandler,
   listMembersHandler,
-  getMemberHandler
+  getMemberHandler,
+  searchMembersHandler
 } from './roles.js';
+import { sendDirectMessageHandler } from './dm.js';
+import {
+  createScheduledEventHandler,
+  listScheduledEventsHandler,
+  deleteScheduledEventHandler
+} from './events.js';
 
 // Export tool handlers
 export {
@@ -107,6 +114,11 @@ export {
   removeRoleHandler,
   listMembersHandler,
   getMemberHandler,
+  searchMembersHandler,
+  sendDirectMessageHandler,
+  createScheduledEventHandler,
+  listScheduledEventsHandler,
+  deleteScheduledEventHandler,
   listServersHandler,
   searchMessagesHandler
 };

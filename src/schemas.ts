@@ -277,6 +277,54 @@ export const GetMemberSchema = z.object({
     userId: z.string()
 });
 
+export const SearchMembersSchema = z.object({
+    guildId: z.string().describe("The ID of the server (guild) to search in."),
+    query: z.string().min(1).describe("Start of a username or nickname (Discord matches prefixes, case-insensitive)."),
+    limit: z.number().min(1).max(1000).optional().default(10).describe("Maximum number of members to return (default 10, max 1000).")
+}).describe("Search server members by the start of their username or nickname.");
+
+// Direct message schema
+export const SendDirectMessageSchema = z.object({
+    guildId: z.string().describe("The server (guild) the recipient must be a member of."),
+    userId: z.string().describe("The ID of the user to send the direct message to."),
+    message: z.string().min(1).max(2000).describe("The content of the direct message (max 2000 characters).")
+}).describe("Send a direct message to a member of a server the bot is in.");
+
+// Scheduled event schemas
+export const CreateScheduledEventSchema = z.object({
+    guildId: z.string().describe("The ID of the server (guild) to create the event in."),
+    name: z.string().min(1).max(100).describe("Name of the event."),
+    startTime: z.string().datetime({ offset: true }).describe("Start time as ISO 8601, e.g. 2026-11-20T18:00:00+01:00."),
+    endTime: z.string().datetime({ offset: true }).optional().describe("End time as ISO 8601. Required for external events."),
+    description: z.string().max(1000).optional().describe("Description of the event."),
+    entityType: z.enum(["voice", "external"]).describe("voice = in a voice channel of the server, external = somewhere else (link or place)."),
+    channelId: z.string().optional().describe("Voice channel ID. Required for voice events."),
+    location: z.string().max(100).optional().describe("Location or link. Required for external events."),
+    reason: z.string().optional().describe("Optional reason for audit logs.")
+}).superRefine((value, ctx) => {
+    if (value.entityType === "voice" && !value.channelId) {
+        ctx.addIssue({ code: "custom", path: ["channelId"], message: "channelId is required for voice events" });
+    }
+    if (value.entityType === "external" && !value.location) {
+        ctx.addIssue({ code: "custom", path: ["location"], message: "location is required for external events" });
+    }
+    if (value.entityType === "external" && !value.endTime) {
+        ctx.addIssue({ code: "custom", path: ["endTime"], message: "endTime is required for external events" });
+    }
+    if (value.endTime && Date.parse(value.endTime) <= Date.parse(value.startTime)) {
+        ctx.addIssue({ code: "custom", path: ["endTime"], message: "endTime must be after startTime" });
+    }
+}).describe("Create a scheduled event in a server, in a voice channel or at an external location.");
+
+export const ListScheduledEventsSchema = z.object({
+    guildId: z.string().describe("The ID of the server (guild) to list events for.")
+}).describe("List the scheduled events of a server.");
+
+export const DeleteScheduledEventSchema = z.object({
+    guildId: z.string().describe("The ID of the server (guild) the event belongs to."),
+    eventId: z.string().describe("The ID of the scheduled event to delete.")
+}).describe("Delete a scheduled event.");
+
 // Channel permission schemas
 export const SetChannelPermissionsSchema = z.object({
     channelId: z.string(),

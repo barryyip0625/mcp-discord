@@ -52,6 +52,11 @@ import {
   removeRoleHandler,
   listMembersHandler,
   getMemberHandler,
+  searchMembersHandler,
+  sendDirectMessageHandler,
+  createScheduledEventHandler,
+  listScheduledEventsHandler,
+  deleteScheduledEventHandler,
   listServersHandler,
   searchMessagesHandler
 } from './tools/tools.js';
@@ -305,6 +310,26 @@ export class DiscordMCPServer {
 
           case "discord_get_member":
             toolResponse = await getMemberHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_search_members":
+            toolResponse = await searchMembersHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_send_dm":
+            toolResponse = await sendDirectMessageHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_create_scheduled_event":
+            toolResponse = await createScheduledEventHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_list_scheduled_events":
+            toolResponse = await listScheduledEventsHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_delete_scheduled_event":
+            toolResponse = await deleteScheduledEventHandler(args, this.toolContext);
             return toolResponse;
 
           case "discord_create_voice_channel":

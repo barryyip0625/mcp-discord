@@ -8,7 +8,8 @@ import {
   AssignRoleSchema,
   RemoveRoleSchema,
   ListMembersSchema,
-  GetMemberSchema
+  GetMemberSchema,
+  SearchMembersSchema
 } from "../schemas.js";
 import { handleDiscordError } from "../errorHandler.js";
 
@@ -259,6 +260,40 @@ export async function listMembersHandler(
       content: [{
         type: "text",
         text: JSON.stringify({ guildId, memberCount: formatted.length, members: formatted }, null, 2)
+      }]
+    };
+  } catch (error) {
+    return handleDiscordError(error);
+  }
+}
+
+export async function searchMembersHandler(
+  args: unknown,
+  context: ToolContext
+): Promise<ToolResponse> {
+  const { guildId, query, limit } = SearchMembersSchema.parse(args);
+  try {
+    if (!context.client.isReady()) {
+      return {
+        content: [{ type: "text", text: "Discord client not logged in." }],
+        isError: true
+      };
+    }
+    const guild = await context.client.guilds.fetch(guildId);
+    const members = await guild.members.search({ query, limit });
+    const formatted = members.map((member) => ({
+      id: member.id,
+      username: member.user.username,
+      displayName: member.displayName,
+      bot: member.user.bot,
+      roles: member.roles.cache
+        .filter((r) => r.name !== "@everyone")
+        .map((r) => ({ id: r.id, name: r.name }))
+    }));
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({ guildId, query, memberCount: formatted.length, members: formatted }, null, 2)
       }]
     };
   } catch (error) {
