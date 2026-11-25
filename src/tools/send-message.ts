@@ -1,4 +1,4 @@
-import { SendMessageSchema, EditMessageSchema } from '../schemas.js';
+import { SendMessageSchema, EditMessageSchema, ForwardMessageSchema } from '../schemas.js';
 import { ToolHandler } from './types.js';
 import { handleDiscordError } from "../errorHandler.js";
 
@@ -124,6 +124,45 @@ export const editMessageHandler: ToolHandler = async (args, { client }) => {
 
     return {
       content: [{ type: "text", text: `Successfully edited message ${messageId} in channel ${channelId}` }]
+    };
+  } catch (error) {
+    return handleDiscordError(error);
+  }
+};
+
+export const forwardMessageHandler: ToolHandler = async (args, { client }) => {
+  const { sourceChannelId, messageId, targetChannelId } = ForwardMessageSchema.parse(args);
+
+  try {
+    if (!client.isReady()) {
+      return {
+        content: [{ type: "text", text: "Discord client not logged in." }],
+        isError: true
+      };
+    }
+
+    const source = await client.channels.fetch(sourceChannelId);
+    if (!source || !source.isTextBased() || !('messages' in source)) {
+      return {
+        content: [{ type: "text", text: `Cannot find text channel ID: ${sourceChannelId}` }],
+        isError: true
+      };
+    }
+
+    const target = await client.channels.fetch(targetChannelId);
+    if (!target || !target.isTextBased() || !('send' in target)) {
+      return {
+        content: [{ type: "text", text: `Cannot send to channel ID: ${targetChannelId}` }],
+        isError: true
+      };
+    }
+
+    const message = await source.messages.fetch(messageId);
+    const sent = await message.forward(target as any);
+    const urlSuffix = sent?.url ? `, URL: ${sent.url}` : "";
+
+    return {
+      content: [{ type: "text", text: `Message ${messageId} forwarded to channel ${targetChannelId} (new message ID: ${sent.id}${urlSuffix})` }]
     };
   } catch (error) {
     return handleDiscordError(error);

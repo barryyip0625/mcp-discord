@@ -397,6 +397,19 @@ export const toolList = [
     }
   },
   {
+    name: "discord_forward_message",
+    description: "Forwards an existing message, including its attachments (e.g. images), to another channel like Discord's Forward button. Works across servers the bot is in. The forward is a snapshot and cannot be edited afterwards.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sourceChannelId: { type: "string", description: "The ID of the channel containing the message to forward" },
+        messageId: { type: "string", description: "The ID of the message to forward" },
+        targetChannelId: { type: "string", description: "The ID of the channel to forward the message to" }
+      },
+      required: ["sourceChannelId", "messageId", "targetChannelId"]
+    }
+  },
+  {
     name: "discord_delete_message",
     description: "Deletes a specific message from a Discord text channel",
     inputSchema: {

@@ -186,6 +186,12 @@ export const EditMessageSchema = z.object({
     content: z.string()
 });
 
+export const ForwardMessageSchema = z.object({
+    sourceChannelId: z.string().describe("The ID of the channel containing the message to forward."),
+    messageId: z.string().describe("The ID of the message to forward."),
+    targetChannelId: z.string().describe("The ID of the channel to forward the message to.")
+}).describe("Forward a message, including its attachments, to another channel like Discord's Forward button.");
+
 export const DeleteMessageSchema = z.object({
     channelId: z.string().describe("The ID of the channel containing the message to delete."),
     messageId: z.string().describe("The ID of the message to delete."),

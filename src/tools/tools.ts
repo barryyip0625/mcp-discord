@@ -2,7 +2,7 @@ import { Client } from "discord.js";
 import { z } from "zod";
 import { ToolResponse, ToolContext, ToolHandler } from "./types.js";
 import { loginHandler } from './login.js';
-import { sendMessageHandler, editMessageHandler } from './send-message.js';
+import { sendMessageHandler, editMessageHandler, forwardMessageHandler } from './send-message.js';
 import {
   getForumChannelsHandler,
   createForumPostHandler,
@@ -82,6 +82,7 @@ export {
   setForumTagsHandler,
   updateForumPostHandler,
   editMessageHandler,
+  forwardMessageHandler,
   createTextChannelHandler,
   createForumChannelHandler,
   editChannelHandler,

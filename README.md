@@ -331,6 +331,7 @@ Important notes:
   - `attachments`: `id`, `name`, `url`, `contentType`, `size`, `width`, `height` for each attachment
   - **breaking**: `embeds` and `attachments` were bare counts in earlier versions — use `.length` for the count
 - `discord_edit_message`: Edit a bot-authored message
+- `discord_forward_message`: Forward a message, including its attachments, to another channel (works across servers the bot is in); returns the new message ID and URL
 - `discord_add_reaction`: Add a reaction to a message
 - `discord_add_multiple_reactions`: Add multiple reactions to a message
 - `discord_remove_reaction`: Remove a reaction from a message
