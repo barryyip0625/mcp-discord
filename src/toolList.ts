@@ -110,7 +110,7 @@ export const toolList = [
             type: "object",
             properties: {
               name: { type: "string", description: "File name including extension, e.g. chart.png" },
-              url: { type: "string", format: "uri", description: "https URL of the file; downloaded and re-uploaded. Hosts default to cdn.discordapp.com and media.discordapp.net (override with DISCORD_ATTACHMENT_ALLOWED_HOSTS)" },
+              url: { type: "string", format: "uri", description: "https URL of the file; downloaded and re-uploaded. Hosts default to Discord CDNs; tune with DISCORD_ATTACHMENT_ALLOWED_HOSTS / _ADD / _REMOVE" },
               data: { type: "string", description: "Base64-encoded file content (max 25 MiB decoded)" },
               description: { type: "string", maxLength: 1024, description: "Alt text for the attachment" }
             },

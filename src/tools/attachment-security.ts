@@ -7,17 +7,40 @@ export const DEFAULT_ATTACHMENT_URL_HOSTS = [
 /** Soft cap before decoding base64 (Discord upload limit is typically ≤ 25 MiB). */
 export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
+function parseHostList(raw: string | undefined): string[] {
+  if (!raw?.trim()) {
+    return [];
+  }
+  return raw.split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
+}
+
+/**
+ * Resolve the attachment URL host allowlist.
+ *
+ * - Base: `DISCORD_ATTACHMENT_ALLOWED_HOSTS` if set, else Discord CDN defaults.
+ *   Use `*` to allow any https host (add/remove are ignored).
+ * - `DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD`: comma-separated hosts to add.
+ * - `DISCORD_ATTACHMENT_ALLOWED_HOSTS_REMOVE`: comma-separated hosts to remove.
+ */
 export function resolveAllowedAttachmentHosts(
   env: NodeJS.ProcessEnv = process.env
 ): string[] | "*" {
-  const raw = env.DISCORD_ATTACHMENT_ALLOWED_HOSTS?.trim();
-  if (!raw) {
-    return [...DEFAULT_ATTACHMENT_URL_HOSTS];
-  }
-  if (raw === "*") {
+  const baseRaw = env.DISCORD_ATTACHMENT_ALLOWED_HOSTS?.trim();
+  if (baseRaw === "*") {
     return "*";
   }
-  return raw.split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
+
+  const base = baseRaw
+    ? parseHostList(baseRaw)
+    : [...DEFAULT_ATTACHMENT_URL_HOSTS];
+  const add = parseHostList(env.DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD);
+  const remove = new Set(parseHostList(env.DISCORD_ATTACHMENT_ALLOWED_HOSTS_REMOVE));
+
+  const merged = new Set<string>([...base, ...add]);
+  for (const host of remove) {
+    merged.delete(host);
+  }
+  return [...merged];
 }
 
 export function assertAttachmentUrlAllowed(
@@ -40,8 +63,8 @@ export function assertAttachmentUrlAllowed(
   const host = parsed.hostname.toLowerCase();
   if (!allowed.includes(host)) {
     throw new Error(
-      `Attachment URL host not allowed: ${host}. Allowed: ${allowed.join(", ")} ` +
-        `(set DISCORD_ATTACHMENT_ALLOWED_HOSTS to a comma-separated list, or * to allow any https host)`
+      `Attachment URL host not allowed: ${host}. Allowed: ${allowed.join(", ") || "(none)"}. ` +
+        `Adjust DISCORD_ATTACHMENT_ALLOWED_HOSTS / _ADD / _REMOVE, or set DISCORD_ATTACHMENT_ALLOWED_HOSTS=* for any https host`
     );
   }
 }

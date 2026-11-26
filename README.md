@@ -294,7 +294,7 @@ Important notes:
 
 - `discord_login`: Login to Discord using the configured token
 - `discord_list_servers`: List all Discord servers the bot is a member of
-- `discord_send`: Send a message to a specified channel (optionally as a reply, optionally with up to 10 `embeds` and/or up to 10 file `attachments` given as https `url` or base64 `data` — `message` may then be empty); returns the sent message ID and URL. Attachment `url` hosts default to Discord CDNs (`cdn.discordapp.com`, `media.discordapp.net`); override with `DISCORD_ATTACHMENT_ALLOWED_HOSTS` (comma-separated, or `*` for any https host). Base64 `data` is capped at 25 MiB.
+- `discord_send`: Send a message to a specified channel (optionally as a reply, optionally with up to 10 `embeds` and/or up to 10 file `attachments` given as https `url` or base64 `data` — `message` may then be empty); returns the sent message ID and URL. Attachment `url` hosts default to Discord CDNs (`cdn.discordapp.com`, `media.discordapp.net`). Tune with `DISCORD_ATTACHMENT_ALLOWED_HOSTS` (replace base list, or `*` for any https host), `DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD`, and `DISCORD_ATTACHMENT_ALLOWED_HOSTS_REMOVE` (comma-separated). Base64 `data` is capped at 25 MiB.
 - `discord_get_server_info`: Get Discord server information
 
 ### Channel Management
