@@ -1,6 +1,7 @@
 import { SendMessageSchema, EditMessageSchema, ForwardMessageSchema } from '../schemas.js';
 import { ToolHandler } from './types.js';
 import { handleDiscordError } from "../errorHandler.js";
+import { assertAttachmentUrlAllowed, decodeAttachmentData } from "./attachment-security.js";
 
 export const sendMessageHandler: ToolHandler = async (args, { client }) => {
   const { channelId, message, replyToMessageId, embeds, attachments } = SendMessageSchema.parse(args);
@@ -55,13 +56,19 @@ export const sendMessageHandler: ToolHandler = async (args, { client }) => {
         messageOptions.embeds = embeds;
       }
 
-      // Upload files: discord.js accepts a URL string or a Buffer as attachment source
+      // Upload files: discord.js accepts a URL string or a Buffer as attachment source.
+      // URL hosts are allowlisted by default (see attachment-security) to limit SSRF.
       if (attachments && attachments.length > 0) {
-        messageOptions.files = attachments.map(a => ({
-          attachment: a.data ? Buffer.from(a.data, "base64") : a.url,
-          name: a.name,
-          ...(a.description ? { description: a.description } : {})
-        }));
+        messageOptions.files = attachments.map(a => {
+          if (a.url) {
+            assertAttachmentUrlAllowed(a.url);
+          }
+          return {
+            attachment: a.data ? decodeAttachmentData(a.data) : a.url!,
+            name: a.name,
+            ...(a.description ? { description: a.description } : {})
+          };
+        });
       }
 
       const sent = await channel.send(messageOptions);
@@ -167,7 +174,8 @@ export const forwardMessageHandler: ToolHandler = async (args, { client }) => {
     }
 
     const message = await source.messages.fetch(messageId);
-    const sent = await message.forward(target as any);
+    // target is text-based with send; PartialGroupDMChannel has no send so it is excluded
+    const sent = await message.forward(target);
     const urlSuffix = sent?.url ? `, URL: ${sent.url}` : "";
 
     return {

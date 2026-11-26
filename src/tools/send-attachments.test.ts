@@ -57,4 +57,15 @@ describe('discord_send attachments', () => {
     const many = Array.from({ length: 11 }, (_, i) => ({ name: `${i}.png`, data: 'AAAA' }));
     expect(() => SendMessageSchema.parse({ channelId: 'c', message: '', attachments: many })).toThrow();
   });
+
+  it('rejects attachment URLs outside the Discord CDN allowlist', async () => {
+    const result = await sendMessageHandler({
+      channelId: 'channel123',
+      message: '',
+      attachments: [{ name: 'x.png', url: 'https://evil.example/x.png' }]
+    }, { client: mockClient });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toMatch(/not allowed|Attachment URL host/i);
+    expect(channel.send).not.toHaveBeenCalled();
+  });
 });
