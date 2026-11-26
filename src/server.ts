@@ -10,6 +10,7 @@ import {
   createToolContext,
   loginHandler,
   sendMessageHandler,
+  forwardMessageHandler,
   getForumChannelsHandler,
   createForumPostHandler,
   getForumPostHandler,
@@ -173,6 +174,11 @@ export class DiscordMCPServer {
           case "discord_update_forum_post":
             this.logClientState("before discord_update_forum_post handler");
             toolResponse = await updateForumPostHandler(args, this.toolContext);
+            return toolResponse;
+
+          case "discord_forward_message":
+            this.logClientState("before discord_forward_message handler");
+            toolResponse = await forwardMessageHandler(args, this.toolContext);
             return toolResponse;
 
           case "discord_edit_message":

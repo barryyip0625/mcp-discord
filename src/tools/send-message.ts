@@ -1,9 +1,10 @@
-import { SendMessageSchema, EditMessageSchema } from '../schemas.js';
+import { SendMessageSchema, EditMessageSchema, ForwardMessageSchema } from '../schemas.js';
 import { ToolHandler } from './types.js';
 import { handleDiscordError } from "../errorHandler.js";
+import { assertAttachmentUrlAllowed, decodeAttachmentData } from "./attachment-security.js";
 
 export const sendMessageHandler: ToolHandler = async (args, { client }) => {
-  const { channelId, message, replyToMessageId, embeds } = SendMessageSchema.parse(args);
+  const { channelId, message, replyToMessageId, embeds, attachments } = SendMessageSchema.parse(args);
   
   try {
     if (!client.isReady()) {
@@ -53,6 +54,21 @@ export const sendMessageHandler: ToolHandler = async (args, { client }) => {
       // Attach embeds (plain APIEmbed objects are accepted by discord.js as-is)
       if (embeds && embeds.length > 0) {
         messageOptions.embeds = embeds;
+      }
+
+      // Upload files: discord.js accepts a URL string or a Buffer as attachment source.
+      // URL hosts are allowlisted by default (see attachment-security) to limit SSRF.
+      if (attachments && attachments.length > 0) {
+        messageOptions.files = attachments.map(a => {
+          if (a.url) {
+            assertAttachmentUrlAllowed(a.url);
+          }
+          return {
+            attachment: a.data ? decodeAttachmentData(a.data) : a.url!,
+            name: a.name,
+            ...(a.description ? { description: a.description } : {})
+          };
+        });
       }
 
       const sent = await channel.send(messageOptions);
@@ -124,6 +140,46 @@ export const editMessageHandler: ToolHandler = async (args, { client }) => {
 
     return {
       content: [{ type: "text", text: `Successfully edited message ${messageId} in channel ${channelId}` }]
+    };
+  } catch (error) {
+    return handleDiscordError(error);
+  }
+};
+
+export const forwardMessageHandler: ToolHandler = async (args, { client }) => {
+  const { sourceChannelId, messageId, targetChannelId } = ForwardMessageSchema.parse(args);
+
+  try {
+    if (!client.isReady()) {
+      return {
+        content: [{ type: "text", text: "Discord client not logged in." }],
+        isError: true
+      };
+    }
+
+    const source = await client.channels.fetch(sourceChannelId);
+    if (!source || !source.isTextBased() || !('messages' in source)) {
+      return {
+        content: [{ type: "text", text: `Cannot find text channel ID: ${sourceChannelId}` }],
+        isError: true
+      };
+    }
+
+    const target = await client.channels.fetch(targetChannelId);
+    if (!target || !target.isTextBased() || !('send' in target)) {
+      return {
+        content: [{ type: "text", text: `Cannot send to channel ID: ${targetChannelId}` }],
+        isError: true
+      };
+    }
+
+    const message = await source.messages.fetch(messageId);
+    // target is text-based with send; PartialGroupDMChannel has no send so it is excluded
+    const sent = await message.forward(target);
+    const urlSuffix = sent?.url ? `, URL: ${sent.url}` : "";
+
+    return {
+      content: [{ type: "text", text: `Message ${messageId} forwarded to channel ${targetChannelId} (new message ID: ${sent.id}${urlSuffix})` }]
     };
   } catch (error) {
     return handleDiscordError(error);

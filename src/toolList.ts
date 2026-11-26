@@ -52,12 +52,12 @@ export const toolList = [
   },
   {
     name: "discord_send",
-    description: "Sends a message to a specified Discord text channel. Optionally reply to another message by providing its message ID, and/or attach up to 10 embeds. Returns the sent message ID and URL.",
+    description: "Sends a message to a specified Discord text channel. Optionally reply to another message by providing its message ID, and/or attach up to 10 embeds and up to 10 files (images etc.). Returns the sent message ID and URL.",
     inputSchema: {
       type: "object",
       properties: {
         channelId: { type: "string" },
-        message: { type: "string", description: "The content of the message to send (may be empty when embeds are supplied)." },
+        message: { type: "string", description: "The content of the message to send (may be empty when embeds or attachments are supplied)." },
         replyToMessageId: { type: "string", description: "The ID of the message to reply to, if any." },
         embeds: {
           type: "array",
@@ -100,6 +100,21 @@ export const toolList = [
               },
               timestamp: { type: "string", description: "ISO 8601 timestamp shown in the footer." }
             }
+          }
+        },
+        attachments: {
+          type: "array",
+          maxItems: 10,
+          description: "Up to 10 files (e.g. images) to upload with the message. Each needs a name and exactly one of url (official Discord CDNs plus optional custom hosts) or data (base64; size capped by DISCORD_ATTACHMENT_MAX_MB, default 25).",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "File name including extension, e.g. chart.png" },
+              url: { type: "string", format: "uri", description: "https URL of the file; downloaded and re-uploaded. Official Discord CDNs are allowed by default; add custom hosts with DISCORD_ATTACHMENT_ALLOWED_HOSTS" },
+              data: { type: "string", description: "Base64-encoded file content (decoded size capped by DISCORD_ATTACHMENT_MAX_MB, default 25 MiB; 0 disables)" },
+              description: { type: "string", maxLength: 1024, description: "Alt text for the attachment" }
+            },
+            required: ["name"]
           }
         }
       },
@@ -394,6 +409,19 @@ export const toolList = [
         content: { type: "string", description: "The new content for the message" }
       },
       required: ["channelId", "messageId", "content"]
+    }
+  },
+  {
+    name: "discord_forward_message",
+    description: "Forwards an existing message, including its attachments (e.g. images), to another channel like Discord's Forward button. Works across servers the bot is in. The forward is a snapshot and cannot be edited afterwards.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sourceChannelId: { type: "string", description: "The ID of the channel containing the message to forward" },
+        messageId: { type: "string", description: "The ID of the message to forward" },
+        targetChannelId: { type: "string", description: "The ID of the channel to forward the message to" }
+      },
+      required: ["sourceChannelId", "messageId", "targetChannelId"]
     }
   },
   {

@@ -26,12 +26,22 @@ export const EmbedSchema = z.object({
     timestamp: z.string().describe("ISO 8601 timestamp shown in the footer.").optional()
 }).describe("A Discord embed: title, description, url, color, fields, footer, author and timestamp.");
 
+export const AttachmentSchema = z.object({
+    name: z.string().min(1).describe("File name including extension, e.g. chart.png."),
+    url: z.string().url().refine(u => u.startsWith("https://"), "Attachment URL must use https").describe("https URL of the file to attach.").optional(),
+    data: z.string().min(1).describe("Base64-encoded file content.").optional(),
+    description: z.string().max(1024).describe("Alt text for the attachment.").optional()
+}).refine(a => (a.url ? 1 : 0) + (a.data ? 1 : 0) === 1, {
+    message: "Provide exactly one of url or data for each attachment"
+}).describe("A file to attach: either an https URL or base64 data, plus a file name.");
+
 export const SendMessageSchema = z.object({
     channelId: z.string().describe("The ID of the channel to send the message to."),
-    message: z.string().describe("The content of the message to send (may be empty when embeds are supplied)."),
+    message: z.string().describe("The content of the message to send (may be empty when embeds or attachments are supplied)."),
     replyToMessageId: z.string().describe("The ID of the message to reply to, if any.").optional(),
-    embeds: z.array(EmbedSchema).max(10).describe("Up to 10 embeds to attach to the message.").optional()
-}).describe("Send a message to a specified channel, optionally as a reply to another message and/or with embeds.");
+    embeds: z.array(EmbedSchema).max(10).describe("Up to 10 embeds to attach to the message.").optional(),
+    attachments: z.array(AttachmentSchema).max(10).describe("Up to 10 files (e.g. images) to upload with the message.").optional()
+}).describe("Send a message to a specified channel, optionally as a reply to another message and/or with embeds or file attachments.");
 
 export const GetForumChannelsSchema = z.object({
     guildId: z.string().describe("The ID of the server (guild) to get forum channels from.")
@@ -185,6 +195,12 @@ export const EditMessageSchema = z.object({
     messageId: z.string(),
     content: z.string()
 });
+
+export const ForwardMessageSchema = z.object({
+    sourceChannelId: z.string().describe("The ID of the channel containing the message to forward."),
+    messageId: z.string().describe("The ID of the message to forward."),
+    targetChannelId: z.string().describe("The ID of the channel to forward the message to.")
+}).describe("Forward a message, including its attachments, to another channel like Discord's Forward button.");
 
 export const DeleteMessageSchema = z.object({
     channelId: z.string().describe("The ID of the channel containing the message to delete."),
