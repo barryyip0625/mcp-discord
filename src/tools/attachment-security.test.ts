@@ -1,28 +1,20 @@
 import {
   assertAttachmentUrlAllowed,
   decodeAttachmentData,
+  DISCORD_OFFICIAL_ATTACHMENT_HOSTS,
   MAX_ATTACHMENT_BYTES,
   resolveAllowedAttachmentHosts,
   resolveMaxAttachmentBytes,
 } from './attachment-security.js';
 
 describe('attachment-security', () => {
-  it('defaults to Discord CDN hosts', () => {
-    expect(resolveAllowedAttachmentHosts({})).toEqual([
-      'cdn.discordapp.com',
-      'media.discordapp.net',
-    ]);
+  it('includes official Discord CDN hosts by default', () => {
+    expect(resolveAllowedAttachmentHosts({})).toEqual([...DISCORD_OFFICIAL_ATTACHMENT_HOSTS]);
   });
 
-  it('replaces the base list and supports *', () => {
-    expect(resolveAllowedAttachmentHosts({ DISCORD_ATTACHMENT_ALLOWED_HOSTS: '*' })).toBe('*');
-    expect(resolveAllowedAttachmentHosts({ DISCORD_ATTACHMENT_ALLOWED_HOSTS: 'example.com, CDN.Example.ORG' }))
-      .toEqual(['example.com', 'cdn.example.org']);
-  });
-
-  it('adds hosts via DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD', () => {
+  it('merges custom hosts with official Discord CDNs', () => {
     expect(resolveAllowedAttachmentHosts({
-      DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD: 'images.example.com, CDN.Example.ORG',
+      DISCORD_ATTACHMENT_ALLOWED_HOSTS: 'images.example.com, CDN.Example.ORG',
     })).toEqual([
       'cdn.discordapp.com',
       'media.discordapp.net',
@@ -31,26 +23,19 @@ describe('attachment-security', () => {
     ]);
   });
 
-  it('removes hosts via DISCORD_ATTACHMENT_ALLOWED_HOSTS_REMOVE', () => {
-    expect(resolveAllowedAttachmentHosts({
-      DISCORD_ATTACHMENT_ALLOWED_HOSTS_REMOVE: 'media.discordapp.net',
-    })).toEqual(['cdn.discordapp.com']);
+  it('supports * to allow any https host', () => {
+    expect(resolveAllowedAttachmentHosts({ DISCORD_ATTACHMENT_ALLOWED_HOSTS: '*' })).toBe('*');
   });
 
-  it('applies base, add, then remove', () => {
+  it('can disable official Discord CDNs', () => {
     expect(resolveAllowedAttachmentHosts({
-      DISCORD_ATTACHMENT_ALLOWED_HOSTS: 'cdn.discordapp.com,old.example',
-      DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD: 'img.example.com',
-      DISCORD_ATTACHMENT_ALLOWED_HOSTS_REMOVE: 'old.example',
-    })).toEqual(['cdn.discordapp.com', 'img.example.com']);
-  });
+      DISCORD_ATTACHMENT_INCLUDE_DISCORD_CDN: 'false',
+      DISCORD_ATTACHMENT_ALLOWED_HOSTS: 'images.example.com',
+    })).toEqual(['images.example.com']);
 
-  it('ignores add/remove when base is *', () => {
     expect(resolveAllowedAttachmentHosts({
-      DISCORD_ATTACHMENT_ALLOWED_HOSTS: '*',
-      DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD: 'x.example',
-      DISCORD_ATTACHMENT_ALLOWED_HOSTS_REMOVE: 'cdn.discordapp.com',
-    })).toBe('*');
+      DISCORD_ATTACHMENT_INCLUDE_DISCORD_CDN: '0',
+    })).toEqual([]);
   });
 
   it('allows Discord CDN URLs and rejects others by default', () => {
@@ -64,10 +49,10 @@ describe('attachment-security', () => {
     )).toThrow(/not allowed/);
   });
 
-  it('allows hosts added via env', () => {
+  it('allows custom hosts from DISCORD_ATTACHMENT_ALLOWED_HOSTS', () => {
     expect(() => assertAttachmentUrlAllowed(
       'https://images.example.com/a.png',
-      { DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD: 'images.example.com' }
+      { DISCORD_ATTACHMENT_ALLOWED_HOSTS: 'images.example.com' }
     )).not.toThrow();
   });
 

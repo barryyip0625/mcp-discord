@@ -1,5 +1,5 @@
-/** Discord CDN hosts used by attachment URLs from discord_read_messages. */
-export const DEFAULT_ATTACHMENT_URL_HOSTS = [
+/** Official Discord CDN hosts used by attachment URLs from discord_read_messages. */
+export const DISCORD_OFFICIAL_ATTACHMENT_HOSTS = [
   "cdn.discordapp.com",
   "media.discordapp.net",
 ] as const;
@@ -17,33 +17,40 @@ function parseHostList(raw: string | undefined): string[] {
   return raw.split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
 }
 
+function includeDiscordCdn(env: NodeJS.ProcessEnv): boolean {
+  const raw = env.DISCORD_ATTACHMENT_INCLUDE_DISCORD_CDN?.trim().toLowerCase();
+  if (raw === undefined || raw === "") {
+    return true;
+  }
+  return raw !== "0" && raw !== "false" && raw !== "no";
+}
+
 /**
  * Resolve the attachment URL host allowlist.
  *
- * - Base: `DISCORD_ATTACHMENT_ALLOWED_HOSTS` if set, else Discord CDN defaults.
- *   Use `*` to allow any https host (add/remove are ignored).
- * - `DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD`: comma-separated hosts to add.
- * - `DISCORD_ATTACHMENT_ALLOWED_HOSTS_REMOVE`: comma-separated hosts to remove.
+ * - Official Discord CDNs are included by default (`cdn.discordapp.com`, `media.discordapp.net`).
+ *   Set `DISCORD_ATTACHMENT_INCLUDE_DISCORD_CDN=false` to disable them.
+ * - `DISCORD_ATTACHMENT_ALLOWED_HOSTS`: comma-separated **custom** hosts to allow in addition,
+ *   or `*` to allow any https host.
  */
 export function resolveAllowedAttachmentHosts(
   env: NodeJS.ProcessEnv = process.env
 ): string[] | "*" {
-  const baseRaw = env.DISCORD_ATTACHMENT_ALLOWED_HOSTS?.trim();
-  if (baseRaw === "*") {
+  const customRaw = env.DISCORD_ATTACHMENT_ALLOWED_HOSTS?.trim();
+  if (customRaw === "*") {
     return "*";
   }
 
-  const base = baseRaw
-    ? parseHostList(baseRaw)
-    : [...DEFAULT_ATTACHMENT_URL_HOSTS];
-  const add = parseHostList(env.DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD);
-  const remove = new Set(parseHostList(env.DISCORD_ATTACHMENT_ALLOWED_HOSTS_REMOVE));
-
-  const merged = new Set<string>([...base, ...add]);
-  for (const host of remove) {
-    merged.delete(host);
+  const hosts = new Set<string>();
+  if (includeDiscordCdn(env)) {
+    for (const host of DISCORD_OFFICIAL_ATTACHMENT_HOSTS) {
+      hosts.add(host);
+    }
   }
-  return [...merged];
+  for (const host of parseHostList(customRaw)) {
+    hosts.add(host);
+  }
+  return [...hosts];
 }
 
 /**
@@ -90,7 +97,7 @@ export function assertAttachmentUrlAllowed(
   if (!allowed.includes(host)) {
     throw new Error(
       `Attachment URL host not allowed: ${host}. Allowed: ${allowed.join(", ") || "(none)"}. ` +
-        `Adjust DISCORD_ATTACHMENT_ALLOWED_HOSTS / _ADD / _REMOVE, or set DISCORD_ATTACHMENT_ALLOWED_HOSTS=* for any https host`
+        `Add hosts with DISCORD_ATTACHMENT_ALLOWED_HOSTS, or set it to * for any https host`
     );
   }
 }

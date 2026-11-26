@@ -22,7 +22,8 @@ MCP-Discord provides the following Discord-related functionalities:
 - List, create, edit, delete, assign, and remove roles
 - Search messages in a server
 - Read, edit, and delete channel messages (read output includes embed and attachment content)
-- Send messages to specified channels, optionally with embeds
+- Send messages to specified channels, optionally with embeds and file attachments
+- Forward messages (including attachments) to another channel
 - Create, list, and delete scheduled events
 - Retrieve forum channel lists
 - Create, update, delete, and reply to forum posts
@@ -37,6 +38,7 @@ MCP-Discord provides the following Discord-related functionalities:
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Configuration](#configuration)
+  - [Attachment security](#attachment-security)
 - [Tools Documentation](#tools-documentation)
   - [Basic Functions](#basic-functions)
   - [Channel Management](#channel-management)
@@ -194,6 +196,31 @@ node build/index.js --config "your_discord_bot_token"
 MCP_AUTH_TOKEN=your_mcp_auth_token node build/app.js --transport http --port 3000 --config "your_discord_bot_token"
 ```
 
+### Attachment security
+
+`discord_send` can attach files via https `url` or base64 `data`. URL fetches are limited to an allowlist so the server does not become an open SSRF proxy.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| *(official Discord CDNs)* | always on | `cdn.discordapp.com`, `media.discordapp.net` |
+| `DISCORD_ATTACHMENT_ALLOWED_HOSTS` | *(empty)* | Extra custom hosts (comma-separated), or `*` for any https host |
+| `DISCORD_ATTACHMENT_INCLUDE_DISCORD_CDN` | `true` | Set `false` / `0` to disable official Discord CDNs (custom hosts only) |
+| `DISCORD_ATTACHMENT_MAX_MB` | `25` | Max decoded base64 size in MiB; `0` disables the cap (not recommended) |
+
+Effective allowlist = official Discord CDNs (unless disabled) ∪ custom hosts. `*` replaces the list and allows any https host.
+
+```bash
+# Official CDNs + your image host
+export DISCORD_ATTACHMENT_ALLOWED_HOSTS=images.example.com
+
+# Tighten base64 uploads
+export DISCORD_ATTACHMENT_MAX_MB=10
+
+# Custom hosts only (no Discord CDN)
+export DISCORD_ATTACHMENT_INCLUDE_DISCORD_CDN=false
+export DISCORD_ATTACHMENT_ALLOWED_HOSTS=images.example.com
+```
+
 ## Usage with Claude/Cursor
 
 ### 1. Use Stdio Transport with Claude/Cursor
@@ -294,7 +321,7 @@ Important notes:
 
 - `discord_login`: Login to Discord using the configured token
 - `discord_list_servers`: List all Discord servers the bot is a member of
-- `discord_send`: Send a message to a specified channel (optionally as a reply, optionally with up to 10 `embeds` and/or up to 10 file `attachments` given as https `url` or base64 `data` — `message` may then be empty); returns the sent message ID and URL. Attachment `url` hosts default to Discord CDNs (`cdn.discordapp.com`, `media.discordapp.net`). Tune with `DISCORD_ATTACHMENT_ALLOWED_HOSTS` (replace base list, or `*` for any https host), `DISCORD_ATTACHMENT_ALLOWED_HOSTS_ADD`, and `DISCORD_ATTACHMENT_ALLOWED_HOSTS_REMOVE` (comma-separated). Base64 `data` defaults to a 25 MiB cap via `DISCORD_ATTACHMENT_MAX_MB` (`0` disables the cap; not recommended).
+- `discord_send`: Send a message to a specified channel (optionally as a reply, optionally with up to 10 `embeds` and/or up to 10 file `attachments` as https `url` or base64 `data` — `message` may then be empty); returns the sent message ID and URL. See [Attachment security](#attachment-security) for URL allowlist and size limits.
 - `discord_get_server_info`: Get Discord server information
 
 ### Channel Management
