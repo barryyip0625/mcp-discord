@@ -3,6 +3,7 @@ import {
   decodeAttachmentData,
   MAX_ATTACHMENT_BYTES,
   resolveAllowedAttachmentHosts,
+  resolveMaxAttachmentBytes,
 } from './attachment-security.js';
 
 describe('attachment-security', () => {
@@ -70,9 +71,20 @@ describe('attachment-security', () => {
     )).not.toThrow();
   });
 
-  it('rejects oversized base64 payloads', () => {
+  it('defaults max attachment size to 25 MiB', () => {
+    expect(resolveMaxAttachmentBytes({})).toBe(MAX_ATTACHMENT_BYTES);
+    expect(resolveMaxAttachmentBytes({ DISCORD_ATTACHMENT_MAX_MB: '10' })).toBe(10 * 1024 * 1024);
+    expect(resolveMaxAttachmentBytes({ DISCORD_ATTACHMENT_MAX_MB: '0' })).toBeNull();
+    expect(() => resolveMaxAttachmentBytes({ DISCORD_ATTACHMENT_MAX_MB: 'nope' })).toThrow(/Invalid/);
+  });
+
+  it('rejects oversized base64 payloads using the configured cap', () => {
     const huge = 'A'.repeat(Math.ceil(MAX_ATTACHMENT_BYTES / 3) * 4 + 9);
-    expect(() => decodeAttachmentData(huge)).toThrow(/maximum size/);
-    expect(decodeAttachmentData(Buffer.from('ok').toString('base64')).toString()).toBe('ok');
+    expect(() => decodeAttachmentData(huge, {})).toThrow(/maximum size/);
+    expect(decodeAttachmentData(Buffer.from('ok').toString('base64'), {}).toString()).toBe('ok');
+
+    const over1MiB = Buffer.alloc(1024 * 1024 + 1).toString('base64');
+    expect(() => decodeAttachmentData(over1MiB, { DISCORD_ATTACHMENT_MAX_MB: '1' })).toThrow(/maximum size/);
+    expect(() => decodeAttachmentData(over1MiB, { DISCORD_ATTACHMENT_MAX_MB: '0' })).not.toThrow();
   });
 });

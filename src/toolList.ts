@@ -105,13 +105,13 @@ export const toolList = [
         attachments: {
           type: "array",
           maxItems: 10,
-          description: "Up to 10 files (e.g. images) to upload with the message. Each needs a name and exactly one of url (https Discord CDN by default) or data (base64, max 25 MiB).",
+          description: "Up to 10 files (e.g. images) to upload with the message. Each needs a name and exactly one of url (https Discord CDN by default) or data (base64; size capped by DISCORD_ATTACHMENT_MAX_MB, default 25).",
           items: {
             type: "object",
             properties: {
               name: { type: "string", description: "File name including extension, e.g. chart.png" },
               url: { type: "string", format: "uri", description: "https URL of the file; downloaded and re-uploaded. Hosts default to Discord CDNs; tune with DISCORD_ATTACHMENT_ALLOWED_HOSTS / _ADD / _REMOVE" },
-              data: { type: "string", description: "Base64-encoded file content (max 25 MiB decoded)" },
+              data: { type: "string", description: "Base64-encoded file content (decoded size capped by DISCORD_ATTACHMENT_MAX_MB, default 25 MiB; 0 disables)" },
               description: { type: "string", maxLength: 1024, description: "Alt text for the attachment" }
             },
             required: ["name"]

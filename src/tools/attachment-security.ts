@@ -4,8 +4,11 @@ export const DEFAULT_ATTACHMENT_URL_HOSTS = [
   "media.discordapp.net",
 ] as const;
 
-/** Soft cap before decoding base64 (Discord upload limit is typically ≤ 25 MiB). */
-export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+/** Default soft cap for base64 attachments (MiB). Override with DISCORD_ATTACHMENT_MAX_MB. */
+export const DEFAULT_ATTACHMENT_MAX_MB = 25;
+
+/** Default soft cap in bytes (Discord upload limit is typically ≤ 25 MiB). */
+export const MAX_ATTACHMENT_BYTES = DEFAULT_ATTACHMENT_MAX_MB * 1024 * 1024;
 
 function parseHostList(raw: string | undefined): string[] {
   if (!raw?.trim()) {
@@ -43,6 +46,29 @@ export function resolveAllowedAttachmentHosts(
   return [...merged];
 }
 
+/**
+ * Resolve max decoded attachment size in bytes.
+ * `DISCORD_ATTACHMENT_MAX_MB`: positive integer MiB (default 25). `0` disables the cap.
+ */
+export function resolveMaxAttachmentBytes(
+  env: NodeJS.ProcessEnv = process.env
+): number | null {
+  const raw = env.DISCORD_ATTACHMENT_MAX_MB?.trim();
+  if (raw === undefined || raw === "") {
+    return MAX_ATTACHMENT_BYTES;
+  }
+  if (!/^\d+$/.test(raw)) {
+    throw new Error(
+      `Invalid DISCORD_ATTACHMENT_MAX_MB: ${raw}. Use a non-negative integer (MiB), or 0 to disable`
+    );
+  }
+  const mb = Number(raw);
+  if (mb === 0) {
+    return null;
+  }
+  return mb * 1024 * 1024;
+}
+
 export function assertAttachmentUrlAllowed(
   url: string,
   env: NodeJS.ProcessEnv = process.env
@@ -69,20 +95,26 @@ export function assertAttachmentUrlAllowed(
   }
 }
 
-/** Decode base64 attachment data with a size guard. */
-export function decodeAttachmentData(data: string): Buffer {
-  // Reject obviously oversized base64 before allocating the full buffer.
-  // Base64 expands ~4/3; require encoded length to fit under the cap with padding slack.
-  const maxEncoded = Math.ceil(MAX_ATTACHMENT_BYTES / 3) * 4 + 8;
-  if (data.length > maxEncoded) {
-    throw new Error(
-      `Attachment data exceeds maximum size of ${MAX_ATTACHMENT_BYTES} bytes`
-    );
+/** Decode base64 attachment data with a size guard (see DISCORD_ATTACHMENT_MAX_MB). */
+export function decodeAttachmentData(
+  data: string,
+  env: NodeJS.ProcessEnv = process.env
+): Buffer {
+  const maxBytes = resolveMaxAttachmentBytes(env);
+  if (maxBytes !== null) {
+    // Reject obviously oversized base64 before allocating the full buffer.
+    // Base64 expands ~4/3; require encoded length to fit under the cap with padding slack.
+    const maxEncoded = Math.ceil(maxBytes / 3) * 4 + 8;
+    if (data.length > maxEncoded) {
+      throw new Error(
+        `Attachment data exceeds maximum size of ${maxBytes} bytes (DISCORD_ATTACHMENT_MAX_MB)`
+      );
+    }
   }
   const buf = Buffer.from(data, "base64");
-  if (buf.length > MAX_ATTACHMENT_BYTES) {
+  if (maxBytes !== null && buf.length > maxBytes) {
     throw new Error(
-      `Attachment data exceeds maximum size of ${MAX_ATTACHMENT_BYTES} bytes`
+      `Attachment data exceeds maximum size of ${maxBytes} bytes (DISCORD_ATTACHMENT_MAX_MB)`
     );
   }
   return buf;
