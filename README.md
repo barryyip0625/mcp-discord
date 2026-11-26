@@ -294,7 +294,7 @@ Important notes:
 
 - `discord_login`: Login to Discord using the configured token
 - `discord_list_servers`: List all Discord servers the bot is a member of
-- `discord_send`: Send a message to a specified channel (optionally as a reply, optionally with up to 10 `embeds` — `message` may then be empty); returns the sent message ID and URL
+- `discord_send`: Send a message to a specified channel (optionally as a reply, optionally with up to 10 `embeds` and/or up to 10 file `attachments` given as https `url` or base64 `data` — `message` may then be empty); returns the sent message ID and URL
 - `discord_get_server_info`: Get Discord server information
 
 ### Channel Management

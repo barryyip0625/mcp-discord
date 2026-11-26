@@ -52,12 +52,12 @@ export const toolList = [
   },
   {
     name: "discord_send",
-    description: "Sends a message to a specified Discord text channel. Optionally reply to another message by providing its message ID, and/or attach up to 10 embeds. Returns the sent message ID and URL.",
+    description: "Sends a message to a specified Discord text channel. Optionally reply to another message by providing its message ID, and/or attach up to 10 embeds and up to 10 files (images etc.). Returns the sent message ID and URL.",
     inputSchema: {
       type: "object",
       properties: {
         channelId: { type: "string" },
-        message: { type: "string", description: "The content of the message to send (may be empty when embeds are supplied)." },
+        message: { type: "string", description: "The content of the message to send (may be empty when embeds or attachments are supplied)." },
         replyToMessageId: { type: "string", description: "The ID of the message to reply to, if any." },
         embeds: {
           type: "array",
@@ -100,6 +100,21 @@ export const toolList = [
               },
               timestamp: { type: "string", description: "ISO 8601 timestamp shown in the footer." }
             }
+          }
+        },
+        attachments: {
+          type: "array",
+          maxItems: 10,
+          description: "Up to 10 files (e.g. images) to upload with the message. Each needs a name and exactly one of url (https) or data (base64).",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "File name including extension, e.g. chart.png" },
+              url: { type: "string", format: "uri", description: "https URL of the file; it is downloaded and re-uploaded (e.g. an attachment URL returned by discord_read_messages)" },
+              data: { type: "string", description: "Base64-encoded file content" },
+              description: { type: "string", maxLength: 1024, description: "Alt text for the attachment" }
+            },
+            required: ["name"]
           }
         }
       },
